@@ -1,0 +1,6 @@
+# Created by .ignore support plugin (hsz.mobi)
+media/profile/
+#config/__pycache__/
+#users/__pycache__/
+#users/migrations/__pycache__/
+config/secrets.json

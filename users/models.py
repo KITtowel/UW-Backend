@@ -8,7 +8,6 @@ class Profile(models.Model):  # 프로필 모델 user 모델과 일대일 관계
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     nickname = models.CharField(max_length=128)
     location = models.CharField(null=True, default='', max_length=128)
-    description = models.CharField(null=True, default='', max_length=300)
     image = models.ImageField(upload_to="profile/", default='default.PNG')
 
 

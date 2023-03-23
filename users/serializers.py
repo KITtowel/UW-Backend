@@ -60,4 +60,4 @@ class LoginSerializer(serializers.Serializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ("nickname", "location", "description", "image")
+        fields = ("nickname", "location", "image")

@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
+#테스트
 
 class Profile(models.Model):  # 프로필 모델 user 모델과 일대일 관계, user 모델은 따로 만들지 않아도 장고에 기본으로 사용 가능
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)

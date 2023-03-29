@@ -45,8 +45,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True, write_only=True)
+    username = serializers.CharField(help_text="아이디", required=True)
+    password = serializers.CharField(help_text="비밀번호", required=True, write_only=True)
 
     def validate(self, data):
         user = authenticate(**data)

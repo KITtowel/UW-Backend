@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
-from .models import Profile
+from .models import Profile, MyUser
 
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
@@ -12,7 +12,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         help_text="이메일(Unique)",
         required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())],
+        validators=[UniqueValidator(queryset=MyUser.objects.all())],
     )
     password = serializers.CharField(
         help_text="비밀번호",
@@ -21,10 +21,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         validators=[validate_password],
     )
     password2 = serializers.CharField(help_text="비밀번호 재입력", write_only=True, required=True)
+    location = serializers.CharField(help_text="거주 지역", required=True)
 
     class Meta:
-        model = User
-        fields = ('username', 'password', 'password2', 'email')
+        model = MyUser
+        fields = ('username', 'password', 'password2', 'email', 'location')
 
     def validate(self, data):
         if data['password'] != data['password2']:
@@ -33,9 +34,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        user = User.objects.create_user(
+        user = MyUser.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
+            location=validated_data['location']
         )
 
         user.set_password(validated_data['password'])

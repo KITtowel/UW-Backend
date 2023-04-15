@@ -4,12 +4,11 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model, authenticate
 
 from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer
-from .models import Profile
+from .models import Profile, MyUser
 
-User = get_user_model()
 
 class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
+    queryset = MyUser.objects.all()
     serializer_class = RegisterSerializer
 
 

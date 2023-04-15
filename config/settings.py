@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'drf_yasg',  # api 명세서
 ]
 
+AUTH_USER_MODEL = 'users.MyUser'
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',

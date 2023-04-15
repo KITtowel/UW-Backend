@@ -19,7 +19,7 @@ class Profile(models.Model):  # 프로필 모델 user 모델과 일대일 관계
 @receiver(post_save, sender=MyUser)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
+        Profile.objects.create(user=instance, nickname=f"사용자 {instance.id}")
         instance.profile.location = instance.location
         instance.profile.save()
 

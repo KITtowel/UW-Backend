@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
 from .models import Profile, MyUser
@@ -9,6 +8,10 @@ from rest_framework.validators import UniqueValidator
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    nickname = serializers.CharField(
+        help_text="닉네임(Unique)",
+        required=True
+    )
     email = serializers.EmailField(
         help_text="이메일(Unique)",
         required=True,
@@ -25,7 +28,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('username', 'password', 'password2', 'email', 'location')
+        fields = ('nickname', 'username', 'password', 'password2', 'email', 'location')
 
     def validate(self, data):
         if data['password'] != data['password2']:
@@ -34,7 +37,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        nickname = validated_data['nickname']
+        email = validated_data['email']
+        if MyUser.objects.filter(nickname=nickname).exists():
+            raise serializers.ValidationError(
+                {"nickname": "이미 사용 중인 닉네임입니다."})
         user = MyUser.objects.create_user(
+            nickname=nickname,
             username=validated_data['username'],
             email=validated_data['email'],
             location=validated_data['location']
@@ -63,3 +72,11 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ("nickname", "location", "image")
+
+    def update(self, instance, validated_data):
+        if 'nickname' in validated_data:
+            new_nickname = validated_data['nickname']
+            existing_nicknames = Profile.objects.exclude(pk=instance.pk).values_list('nickname', flat=True)
+            if new_nickname in existing_nicknames:
+                raise serializers.ValidationError({'nickname': '이미 사용 중인 닉네임입니다.'})
+        return super().update(instance, validated_data)

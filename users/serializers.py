@@ -24,11 +24,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         validators=[validate_password],
     )
     password2 = serializers.CharField(help_text="비밀번호 재입력", write_only=True, required=True)
-    location = serializers.CharField(help_text="거주 지역", required=True)
+    location = serializers.CharField(help_text="지역 선택", required=True)
+    location2 = serializers.CharField(help_text="시/군 선택", required=False, allow_blank=True)
 
     class Meta:
         model = MyUser
-        fields = ('nickname', 'username', 'password', 'password2', 'email', 'location')
+        fields = ('nickname', 'username', 'password', 'password2', 'email', 'location', 'location2')
 
     def validate(self, data):
         if data['password'] != data['password2']:
@@ -38,7 +39,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         nickname = validated_data['nickname']
-        email = validated_data['email']
         if MyUser.objects.filter(nickname=nickname).exists():
             raise serializers.ValidationError(
                 {"nickname": "이미 사용 중인 닉네임입니다."})
@@ -46,7 +46,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             nickname=nickname,
             username=validated_data['username'],
             email=validated_data['email'],
-            location=validated_data['location']
+            location=validated_data['location'],
+            location2=validated_data['location2']
         )
 
         user.set_password(validated_data['password'])
@@ -69,9 +70,11 @@ class LoginSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    location2 = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
     class Meta:
         model = Profile
-        fields = ("nickname", "location", "image")
+        fields = ("nickname", "location", "location2", "image")
 
     def update(self, instance, validated_data):
         if 'nickname' in validated_data:
@@ -79,4 +82,6 @@ class ProfileSerializer(serializers.ModelSerializer):
             existing_nicknames = Profile.objects.exclude(pk=instance.pk).values_list('nickname', flat=True)
             if new_nickname in existing_nicknames:
                 raise serializers.ValidationError({'nickname': '이미 사용 중인 닉네임입니다.'})
+        instance.location2 = validated_data.get('location2', instance.location2)
+        instance.save()
         return super().update(instance, validated_data)

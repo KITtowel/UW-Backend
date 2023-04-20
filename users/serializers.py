@@ -1,5 +1,6 @@
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password
 from .models import Profile, MyUser
 
 from rest_framework import serializers
@@ -85,3 +86,29 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.location2 = validated_data.get('location2', instance.location2)
         instance.save()
         return super().update(instance, validated_data)
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    new_password_confirm = serializers.CharField(required=True)
+
+    def validate_old_password(self, value):
+        user = self.context['request'].user
+        if not check_password(value, user.password):
+            raise serializers.ValidationError('현재 비밀번호가 맞지 않습니다.')
+        return value
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+    def validate(self, data):
+        if data['new_password'] != data['new_password_confirm']:
+            raise serializers.ValidationError('새로운 비밀번호 입력이 일치하지 않습니다.')
+        return data
+
+    def save(self):
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
+        user.save()

@@ -1,10 +1,10 @@
-from django.contrib.auth.models import User
 from rest_framework import generics, status
 from rest_framework.response import Response
-from django.contrib.auth import get_user_model, authenticate
-
-from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer
+from django.contrib.auth import authenticate
+from rest_framework.views import APIView
+from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer, PasswordChangeSerializer
 from .models import Profile, MyUser
+from rest_framework.permissions import IsAuthenticated
 
 
 class RegisterView(generics.CreateAPIView):
@@ -35,3 +35,16 @@ class ProfileView(generics.RetrieveUpdateDestroyAPIView):
         self.perform_destroy(instance)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordChangeView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PasswordChangeSerializer
+
+    def post(self, request):
+        user = request.user
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'detail': '비밀번호가 성공적으로 변경되었습니다.'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

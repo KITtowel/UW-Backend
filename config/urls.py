@@ -36,6 +36,7 @@ schema_view = get_schema_view(  # api 문서 설명
 urlpatterns = [  # BaseURL 다음 입력할 수 있는 url 
     path('admin/', admin.site.urls),
     path('users/', include('users.urls')),
+    path('stores/', include('stores.urls')),
 ]
 urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)  # 미디어 경로
 

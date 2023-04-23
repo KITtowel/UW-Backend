@@ -38,10 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',  # rest_framework 사용하기 위해
     'rest_framework.authtoken',  # 사용자 인증 토큰
-    'users',  # 사용자 등록, 회원가입
+    'users',  # 사용자 등록 및 정보, 프로필 관련
     'corsheaders',  # 내 로컬 서버에서 외부 접속 허용
     'django_filters',
     'drf_yasg',  # api 명세서
+    'stores'  # 가맹점 관련
 ]
 
 AUTH_USER_MODEL = 'users.MyUser'

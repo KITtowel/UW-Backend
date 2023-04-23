@@ -2,6 +2,8 @@
 media/profile/
 config/__pycache__/
 users/__pycache__/
+stores/__pycache__/
 users/migrations/__pycache__/
+stores/migrations/__pycache__/
 config/secrets.json
 db.sqlite3

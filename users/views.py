@@ -1,8 +1,9 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework.views import APIView
-from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer, PasswordChangeSerializer
+from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer, \
+    PasswordChangeSerializer, UsernameFindSerializer
 from .models import Profile, MyUser
 from rest_framework.permissions import IsAuthenticated
 
@@ -48,3 +49,13 @@ class PasswordChangeView(APIView):
             serializer.save()
             return Response({'detail': '비밀번호가 성공적으로 변경되었습니다.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UsernameFindView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = UsernameFindSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'detail': '입력하신 이메일로 아이디를 보냈습니다.'}, status=status.HTTP_200_OK)

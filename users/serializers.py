@@ -7,6 +7,8 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.validators import UniqueValidator
 
+from django.core.mail import send_mail
+from django.conf import settings
 
 class RegisterSerializer(serializers.ModelSerializer):
     nickname = serializers.CharField(
@@ -112,3 +114,27 @@ class PasswordChangeSerializer(serializers.Serializer):
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
         user.save()
+
+
+class UsernameFindSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        try:
+            user = MyUser.objects.get(email=value, is_active=True)
+        except MyUser.DoesNotExist:
+            raise serializers.ValidationError('입력하신 이메일로 등록된 아이디가 없습니다.')
+        return user.email
+
+    def send_username_email(self, user):
+        subject = '[Underwater] 아이디를 확인해주세요. '
+        message = f'안녕하세요 {user.nickname}님, 당신의 아이디는 {user.username} 입니다.'
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [user.email]
+        send_mail(subject, message, from_email, recipient_list)
+
+    def save(self):
+        email = self.validated_data['email']
+        user = MyUser.objects.get(email=email)
+        self.send_username_email(user)
+        return email

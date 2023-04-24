@@ -6,6 +6,9 @@ from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer,
     PasswordChangeSerializer, UsernameFindSerializer
 from .models import Profile, MyUser
 from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.forms import PasswordResetForm
+from django.core.exceptions import ValidationError
+from rest_framework.request import Request
 
 
 class RegisterView(generics.CreateAPIView):
@@ -59,3 +62,22 @@ class UsernameFindView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({'detail': '입력하신 이메일로 아이디를 보냈습니다.'}, status=status.HTTP_200_OK)
+
+
+class CustomPasswordResetView(APIView):  # 이메일 입력받아서 비밀번호 초기화 메일 전송
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request: Request):
+        email = request.data.get('email')
+        form = PasswordResetForm({'email': email})
+        if form.is_valid():
+            try:
+                form.save(
+                    email_template_name='registration/password_reset_email.html',
+                    domain_override=request.get_host(),
+                )
+            except ValidationError:
+                return Response({'message': '비밀번호 초기화 이메일을 전송하지 못했습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': '비밀번호 초기화 이메일을 전송했습니다.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': '입력값이 올바르지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)

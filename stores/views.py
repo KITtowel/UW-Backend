@@ -20,7 +20,7 @@ class StorePagination(PageNumberPagination):
 class StoreListView(APIView):
     pagination_class = StorePagination
 
-    def get(self, request):
+    def post(self, request):
         try:
             user_latitude = float(request.data.get('latitude'))
             user_longitude = float(request.data.get('longitude'))

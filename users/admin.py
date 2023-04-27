@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import User
-from .models import Profile,MyUser
+from .models import Profile, MyUser, Withdrawal
 
 
 class ProfileInline(admin.StackedInline):
@@ -12,7 +11,12 @@ class ProfileInline(admin.StackedInline):
 
 class UserAdmin(BaseUserAdmin):
     inlines = (ProfileInline, )
+    list_display = ('username', 'email', 'nickname', 'location', 'location2', 'is_staff')
 
 
-# admin.site.unregister(User)
+class WithdrawalAdmin(admin.ModelAdmin):
+    list_display = ('location', 'location2', 'reason')
+
+
 admin.site.register(MyUser, UserAdmin)
+admin.site.register(Withdrawal, WithdrawalAdmin)

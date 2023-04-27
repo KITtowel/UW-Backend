@@ -18,6 +18,13 @@ class Profile(models.Model):  # 프로필 모델 MyUser 모델과 일대일 관�
     image = models.ImageField(upload_to="profile/", default='default.png')
 
 
+class Withdrawal(models.Model):
+    user = models.OneToOneField(MyUser, on_delete=models.SET_NULL, null=True)
+    location = models.CharField(max_length=20, blank=False, null=False)
+    location2 = models.CharField(max_length=20, blank=True, default='')
+    reason = models.CharField(max_length=100, blank=False, null=False)
+
+
 @receiver(post_save, sender=MyUser)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:

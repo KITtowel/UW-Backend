@@ -1,7 +1,7 @@
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
-from .models import Profile, MyUser
+from .models import Profile, MyUser, Withdrawal
 
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
@@ -9,6 +9,7 @@ from rest_framework.validators import UniqueValidator
 
 from django.core.mail import send_mail
 from django.conf import settings
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     nickname = serializers.CharField(
@@ -88,6 +89,12 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.location2 = validated_data.get('location2', instance.location2)
         instance.save()
         return super().update(instance, validated_data)
+
+
+class WithdrawalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Withdrawal
+        fields = ("location", "location2", "reason")
 
 
 class PasswordChangeSerializer(serializers.Serializer):

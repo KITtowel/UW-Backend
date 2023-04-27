@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer, \
     PasswordChangeSerializer, UsernameFindSerializer
-from .models import Profile, MyUser
+from .models import Profile, MyUser, Withdrawal
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.forms import PasswordResetForm
 from django.core.exceptions import ValidationError
@@ -36,9 +36,14 @@ class ProfileView(generics.RetrieveUpdateDestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         user = instance.user
+        password = request.data.get('password')
+        if not user.check_password(password):
+            return Response({'error': '비밀번호가 일치하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        withdrawal = Withdrawal(user=user, location=user.location, location2=user.location2, reason=request.data.get('reason'))
+        withdrawal.save()
         self.perform_destroy(instance)
         user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': '이용해주셔서 감사했습니다. 탈퇴처리가 되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
 
 
 class PasswordChangeView(APIView):

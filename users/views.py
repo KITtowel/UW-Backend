@@ -69,15 +69,22 @@ class CustomPasswordResetView(APIView):  # 이메일 입력받아서 비밀번�
 
     def post(self, request: Request):
         email = request.data.get('email')
-        form = PasswordResetForm({'email': email})
-        if form.is_valid():
-            try:
-                form.save(
-                    email_template_name='registration/password_reset_email.html',
-                    domain_override=request.get_host(),
-                )
-            except ValidationError:
-                return Response({'message': '비밀번호 초기화 이메일을 전송하지 못했습니다.'}, status=status.HTTP_400_BAD_REQUEST)
-            return Response({'message': '비밀번호 초기화 이메일을 전송했습니다.'}, status=status.HTTP_200_OK)
+        username = request.data.get('username')
+        user_queryset = MyUser.objects.filter(email=email, username=username)
+
+        if user_queryset.exists():
+            form = PasswordResetForm({'email': email})
+            if form.is_valid():
+                try:
+                    form.save(
+                        email_template_name='registration/password_reset_email.html',
+                        domain_override=request.get_host(),
+                        # subject_template_name='users/password_reset.txt'
+                    )
+                except ValidationError:
+                    return Response({'message': '비밀번호 초기화 이메일을 전송하지 못했습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message': '비밀번호 초기화 이메일을 전송했습니다.'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'message': '입력값이 올바르지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({'message': '입력값이 올바르지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': '해당하는 사용자가 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)

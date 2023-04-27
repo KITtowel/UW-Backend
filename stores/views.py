@@ -1,6 +1,5 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .models import StoreDaegu
 from .serializers import StoreListSerializer
@@ -43,8 +42,9 @@ class StoreListView(APIView):
         return paginator.get_paginated_response(result_page)
 
 
-@permission_classes([IsAuthenticated])
 class StoreLikeView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, pk):
         try:
             store = StoreDaegu.objects.get(store_id=pk)
@@ -56,3 +56,19 @@ class StoreLikeView(APIView):
         else:
             store.likes.add(request.user)
             return Response(status=status.HTTP_200_OK, data={'message': '좋아요가 등록되었습니다.'})
+
+
+class LikedStoreListView(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = StorePagination
+
+    def post(self, request):
+        user = request.user
+        liked_stores = user.like_posts.all()
+        serializer = StoreListSerializer(liked_stores, many=True)
+        paginator = self.pagination_class()
+        paginated_data = paginator.paginate_queryset(serializer.data, request)
+        response = paginator.get_paginated_response(paginated_data)
+        if paginator.page.number > paginator.page.paginator.num_pages:
+            return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
+        return response

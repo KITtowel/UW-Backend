@@ -11,7 +11,7 @@ class StoreDaegu(models.Model):
     longitude = models.FloatField()  # 경도
     category = models.CharField(max_length=10)
     menu = models.CharField(max_length=100)
-    likes = models.ManyToManyField(MyUser, related_name='like_posts', blank=True, null=True)
+    likes = models.ManyToManyField(MyUser, related_name='like_posts', blank=True)
     rating_mean = models.FloatField(null=True)  # 평균 평점
 
     class Meta:

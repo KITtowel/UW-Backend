@@ -8,7 +8,8 @@ class StoreListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StoreDaegu
-        fields = ('store_id', 'store_name', 'store_address', 'category', 'latitude', 'longitude', 'rating_mean', 'distance')
+        fields = ('store_id', 'store_name', 'store_address', 'category', 'latitude', 'longitude',
+                  'rating_mean', 'likes_count', 'distance')
 
     def get_distance(self, obj):
         if 'user_latitude' in self.context and 'user_longitude' in self.context:

@@ -19,6 +19,7 @@ class StorePagination(PageNumberPagination):
         return response
 
 
+# 가까운 거리순으로 가맹점 리스트 반환
 class StoreListView(APIView):
     pagination_class = StorePagination
 
@@ -30,7 +31,8 @@ class StoreListView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
 
         store = StoreDaegu.objects.all()
-        serializer = StoreListSerializer(store, many=True, context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
+        serializer = StoreListSerializer(store, many=True,
+                                         context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
         sorted_data = sorted(serializer.data, key=itemgetter('distance'))
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(sorted_data, request)
@@ -42,6 +44,7 @@ class StoreListView(APIView):
         return paginator.get_paginated_response(result_page)
 
 
+# 가맹점 좋아요 기능
 class StoreLikeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -61,6 +64,7 @@ class StoreLikeView(APIView):
         return Response(status=status.HTTP_200_OK, data={'message': message, 'liked': liked, })
 
 
+# 사용자가 좋아요 누른 가맹점 리스트 반환
 class LikedStoreListView(APIView):
     permission_classes = [IsAuthenticated]
     pagination_class = StorePagination
@@ -69,9 +73,29 @@ class LikedStoreListView(APIView):
         user = request.user
         liked_stores = user.like_posts.all()
         serializer = StoreListSerializer(liked_stores, many=True)
+        sorted_data = sorted(serializer.data, key=itemgetter('store_name'))  # 가맹점 이름 순으로 정렬
         paginator = self.pagination_class()
-        paginated_data = paginator.paginate_queryset(serializer.data, request)
+        paginated_data = paginator.paginate_queryset(sorted_data, request)
         response = paginator.get_paginated_response(paginated_data)
         if paginator.page.number > paginator.page.paginator.num_pages:
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
         return response
+
+
+# 좋아요 개수가 많은 순으로 가맹점 리스트 반환
+class LikedCountStoreListView(APIView):
+    pagination_class = StorePagination
+
+    def post(self, request):
+        store = StoreDaegu.objects.all()
+        serializer = StoreListSerializer(store, many=True)
+        # 좋아요 개수가 같으면 가맹점 이름 순으로 정렬
+        sorted_data = sorted(serializer.data, key=lambda x: (-x['likes_count'], x['store_name']))
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(sorted_data, request)
+
+        current_page = paginator.page.number
+        if current_page > 10:
+            return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
+
+        return paginator.get_paginated_response(result_page)

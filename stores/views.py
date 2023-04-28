@@ -52,10 +52,13 @@ class StoreLikeView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '가맹점 정보가 없습니다.'})
         if request.user in store.likes.all():
             store.likes.remove(request.user)
-            return Response(status=status.HTTP_200_OK, data={'message': '좋아요가 취소되었습니다.'})
+            liked = False
+            message = '좋아요가 취소되었습니다.'
         else:
             store.likes.add(request.user)
-            return Response(status=status.HTTP_200_OK, data={'message': '좋아요가 등록되었습니다.'})
+            liked = True
+            message = '좋아요가 등록되었습니다.'
+        return Response(status=status.HTTP_200_OK, data={'message': message, 'liked': liked, })
 
 
 class LikedStoreListView(APIView):

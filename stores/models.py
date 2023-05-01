@@ -4,7 +4,6 @@ from django.utils import timezone
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.core.validators import MaxValueValidator
-from django.db.models.signals import post_save
 
 
 class StoreDaegu(models.Model):
@@ -16,7 +15,7 @@ class StoreDaegu(models.Model):
     category = models.CharField(max_length=10)
     menu = models.CharField(max_length=100)
     likes = models.ManyToManyField(MyUser, related_name='like_posts', blank=True)
-    rating_mean = models.FloatField(null=True)  # 평균 평점
+    rating_mean = models.FloatField(default=0)  # 평균 평점
     likes_count = models.PositiveIntegerField(default=0)
 
     class Meta:

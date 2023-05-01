@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import StoreDaegu, Review
 from users.models import Profile
-from .serializers import StoreListSerializer, StoreDetailSerializer
+from .serializers import StoreListSerializer, StoreDetailSerializer, ReviewCreateSerializer
 from rest_framework.pagination import PageNumberPagination
 from operator import itemgetter
 from rest_framework import generics, status, permissions
@@ -117,7 +117,15 @@ class StoreDetailView(APIView):
 
 
 # 후기글 작성
-# class ReviewCreateView(generics.CreateAPIView):
+class ReviewCreateView(generics.CreateAPIView):
+    serializer_class = ReviewCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        profile = Profile.objects.get(user=self.request.user)
+        store_id = self.kwargs.get('store_id')
+        store = StoreDaegu.objects.get(pk=store_id)
+        serializer.save(author=self.request.user, profile=profile, store=store)
 
 
 # 후기글 조회, 수정, 삭제

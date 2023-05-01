@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import StoreDaegu, Review
 import math
+from django.core.validators import MinLengthValidator, MinValueValidator
 from users.serializers import ProfileSerializer
 
 
@@ -20,6 +21,15 @@ class StoreListSerializer(serializers.ModelSerializer):
             return distance
         else:
             return None
+
+
+class ReviewCreateSerializer(serializers.ModelSerializer):
+    content = serializers.CharField(max_length=200, validators=[MinLengthValidator(10)])
+    rating = serializers.FloatField(validators=[MinValueValidator(1.0)])
+
+    class Meta:
+        model = Review
+        fields = ('store_id', 'content', 'rating')
 
 
 class StoreDetailSerializer(serializers.ModelSerializer):

@@ -3,11 +3,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from .models import StoreDaegu, Review
 from users.models import Profile
-from .serializers import StoreListSerializer, StoreDetailSerializer, ReviewCreateSerializer, ReviewSerializer
+from .serializers import StoreListSerializer, StoreDetailSerializer, ReviewCreateSerializer, ReviewSerializer, \
+    ReviewListSerializer
 from rest_framework.pagination import PageNumberPagination
 from operator import itemgetter
 from rest_framework import generics, status, permissions
 from django.utils import timezone
+from django.db.models import Avg
 
 
 class StorePagination(PageNumberPagination):
@@ -126,6 +128,10 @@ class ReviewCreateView(generics.CreateAPIView):
         store_id = self.kwargs.get('store_id')
         store = StoreDaegu.objects.get(pk=store_id)
         serializer.save(author=self.request.user, profile=profile, store=store)
+        reviews = Review.objects.filter(store=store)
+        rating_mean = reviews.aggregate(Avg('rating'))['rating__avg']
+        store.rating_mean = rating_mean
+        store.save(update_fields=['rating_mean'])
 
 
 # 후기글 조회, 수정, 삭제
@@ -151,18 +157,21 @@ class ReviewView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         serializer.validated_data['modified_date'] = timezone.now()
         serializer.save(author=self.request.user)
+        store = serializer.instance.store
+        reviews = Review.objects.filter(store=store)
+        rating_mean = reviews.aggregate(Avg('rating'))['rating__avg']
+        store.rating_mean = rating_mean
+        store.save(update_fields=['rating_mean'])
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.author != self.request.user:
             return Response({'message': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        store = instance.store
         self.perform_destroy(instance)
+        reviews = Review.objects.filter(store=store)
+        rating_mean = reviews.aggregate(Avg('rating'))['rating__avg']
+        store.rating_mean = rating_mean
+        store.save(update_fields=['rating_mean'])
         return Response({'message': '후기글이 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
 
-
-# 해당 가맹점의 후기글 리스트 반환
-# class ReviewListView(APIView):
-
-
-# 사용자가 작성한 후기글 리스트 반환
-# class UserReviewListView(APIView):

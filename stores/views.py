@@ -1,9 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from .models import StoreDaegu, Review
 from users.models import Profile
-from .serializers import StoreListSerializer, StoreDetailSerializer, ReviewCreateSerializer
+from .serializers import StoreListSerializer, StoreDetailSerializer, ReviewCreateSerializer, ReviewSerializer
 from rest_framework.pagination import PageNumberPagination
 from operator import itemgetter
 from rest_framework import generics, status, permissions
@@ -129,7 +129,35 @@ class ReviewCreateView(generics.CreateAPIView):
 
 
 # 후기글 조회, 수정, 삭제
-# class ReviewView(generics.RetrieveUpdateDestroyAPIView):
+class ReviewView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.author != self.request.user:
+            return Response({'message': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response({'message': '수정이 완료되었습니다.'}, status=status.HTTP_200_OK)
+
+    def perform_update(self, serializer):
+        serializer.validated_data['modified_date'] = timezone.now()
+        serializer.save(author=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.author != self.request.user:
+            return Response({'message': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        self.perform_destroy(instance)
+        return Response({'message': '후기글이 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
 
 
 # 해당 가맹점의 후기글 리스트 반환

@@ -32,14 +32,25 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         fields = ('store_id', 'content', 'rating')
 
 
+class ReviewSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True)
+    published_data = serializers.ReadOnlyField()
+    reported_num = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Review
+        fields = ('id', 'author', 'profile', 'store', 'content', 'rating', 'published_data',
+                  'modified_date', 'reported_num')
+
+
 class StoreDetailSerializer(serializers.ModelSerializer):
     liked_by_user = serializers.SerializerMethodField()
-    # reviews = ReviewSerializer(many=True, read_only=True)
+    reviews = ReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = StoreDaegu
         fields = ('store_id', 'store_name', 'store_address', 'category', 'latitude', 'longitude',
-                  'rating_mean', 'liked_by_user', 'likes_count', 'menu')
+                  'rating_mean', 'liked_by_user', 'likes_count', 'menu', 'reviews')
 
     def get_liked_by_user(self, obj):
         request = self.context.get('request')

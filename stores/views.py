@@ -1,11 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import StoreDaegu
-from .serializers import StoreListSerializer
+from .models import StoreDaegu, Review
+from users.models import Profile
+from .serializers import StoreListSerializer, StoreDetailSerializer
 from rest_framework.pagination import PageNumberPagination
 from operator import itemgetter
-from rest_framework import status
+from rest_framework import generics, status, permissions
+from django.utils import timezone
 
 
 class StorePagination(PageNumberPagination):
@@ -99,3 +101,32 @@ class LikedCountStoreListView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
 
         return paginator.get_paginated_response(result_page)
+
+
+# 가맹점 상세보기
+class StoreDetailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, store_id):
+        try:
+            store = StoreDaegu.objects.get(store_id=store_id)
+        except StoreDaegu.DoesNotExist:
+            return Response({'message': '가맹점이 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = StoreDetailSerializer(store, context={'request': request})
+        return Response(serializer.data)
+
+
+# 후기글 작성
+# class ReviewCreateView(generics.CreateAPIView):
+
+
+# 후기글 조회, 수정, 삭제
+# class ReviewView(generics.RetrieveUpdateDestroyAPIView):
+
+
+# 해당 가맹점의 후기글 리스트 반환
+# class ReviewListView(APIView):
+
+
+# 사용자가 작성한 후기글 리스트 반환
+# class UserReviewListView(APIView):

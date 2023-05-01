@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import StoreDaegu
+from .models import StoreDaegu, Review
 import math
+from users.serializers import ProfileSerializer
 
 
 class StoreListSerializer(serializers.ModelSerializer):
@@ -19,3 +20,20 @@ class StoreListSerializer(serializers.ModelSerializer):
             return distance
         else:
             return None
+
+
+class StoreDetailSerializer(serializers.ModelSerializer):
+    liked_by_user = serializers.SerializerMethodField()
+    # reviews = ReviewSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = StoreDaegu
+        fields = ('store_id', 'store_name', 'store_address', 'category', 'latitude', 'longitude',
+                  'rating_mean', 'liked_by_user', 'likes_count', 'menu')
+
+    def get_liked_by_user(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            if obj.likes.filter(username=request.user.username).exists():
+                return True
+        return False

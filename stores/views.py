@@ -175,3 +175,21 @@ class ReviewView(generics.RetrieveUpdateDestroyAPIView):
         store.save(update_fields=['rating_mean'])
         return Response({'message': '후기글이 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
 
+
+# 평균 평점이 높은 순으로 가맹점 리스트 반환
+class MeanRatingStoreListView(APIView):
+    pagination_class = StorePagination
+
+    def post(self, request):
+        store = StoreDaegu.objects.all()
+        serializer = StoreListSerializer(store, many=True)
+        # 평균 평점이 같으면 가맹점 이름 순으로 정렬
+        sorted_data = sorted(serializer.data, key=lambda x: (-x['rating_mean'], x['store_name']))
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(sorted_data, request)
+
+        current_page = paginator.page.number
+        if current_page > 10:
+            return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
+
+        return paginator.get_paginated_response(result_page)

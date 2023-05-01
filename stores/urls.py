@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import StoreListView, StoreLikeView, LikedStoreListView, LikedCountStoreListView, StoreDetailView, \
-    ReviewCreateView, ReviewView
+    ReviewCreateView, ReviewView, MeanRatingStoreListView
 
 urlpatterns = [
     path('distance_order/', StoreListView.as_view()),  # 거리순 가맹점 리스트 반환
@@ -10,4 +10,5 @@ urlpatterns = [
     path('detail/<int:store_id>/', StoreDetailView.as_view(), name='store_detail'),  # 가맹점 상세보기
     path('detail/<int:store_id>/reviews/', ReviewCreateView.as_view(), name='create_review'),  # 가맹점 후기글 작성
     path('reviews/<int:pk>/', ReviewView.as_view(), name='review_detail'),  # 가맹점 후기글 조회, 수정, 삭제
+    path('rating_order/', MeanRatingStoreListView.as_view()),  # 평균 평점이 높은 순으로 리스트 반환
 ]

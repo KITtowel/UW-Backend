@@ -223,7 +223,7 @@ class ReviewReportView(APIView):
         except Review.DoesNotExist:
             raise Response({'message': '없는 후기글입니다.'}, status=status.HTTP_404_NOT_FOUND)
 
-    def post(self, request, pk, *args, **kwargs):
+    def post(self, request, pk):
         review = self.get_object(pk)
         if request.user != review.author:
             report_queryset = Report.objects.filter(review=review)

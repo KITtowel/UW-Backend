@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from .models import StoreDaegu, Review
+from .models import StoreDaegu, Review, Report
 from users.models import Profile
 from .serializers import StoreListSerializer, StoreDetailSerializer, ReviewCreateSerializer, ReviewSerializer, \
     ReviewListSerializer
@@ -210,3 +210,30 @@ class UserReviewListView(APIView):
         if paginator.page.number > paginator.page.paginator.num_pages:
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
         return response
+
+
+class ReviewReportView(APIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+    def get_object(self, pk):
+        try:
+            return self.queryset.get(pk=pk)
+        except Review.DoesNotExist:
+            raise Response({'message': '없는 후기글입니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request, pk, *args, **kwargs):
+        review = self.get_object(pk)
+        if request.user != review.author:
+            report_queryset = Report.objects.filter(review=review)
+            if report_queryset.filter(reporter=request.user).exists():
+                return Response({'message': '이미 신고한 후기입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                report = Report(review=review, store=review.store, reporter=request.user, reason=request.data.get('reason'))
+                report.save()
+                review.reported_num += 1
+                review.save()
+                return Response({'message': '신고가 정상적으로 접수되었습니다.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': '자신의 게시글은 신고할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)

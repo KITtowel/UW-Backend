@@ -38,3 +38,10 @@ class Review(models.Model):
     published_data = models.DateTimeField(default=timezone.now)
     reported_num = models.IntegerField(default=0)
     modified_date = models.DateTimeField(auto_now=True)
+
+
+class Report(models.Model):
+    review = models.ForeignKey(Review, on_delete=models.CASCADE)
+    store = models.ForeignKey(StoreDaegu, on_delete=models.CASCADE)
+    reporter = models.ForeignKey(MyUser, on_delete=models.CASCADE, related_name='reports', default='')
+    reason = models.CharField(max_length=200, null=False)

@@ -193,3 +193,20 @@ class MeanRatingStoreListView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
 
         return paginator.get_paginated_response(result_page)
+
+
+# 사용자가 작성한 후기글 리스트 반환
+class UserReviewListView(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = StorePagination
+
+    def post(self, request):
+        reviewed_stores = Review.objects.filter(author=request.user)
+        serializer = ReviewListSerializer(reviewed_stores, many=True)
+        sorted_data = sorted(serializer.data, key=itemgetter('store_name'))  # 가맹점 이름 순으로 정렬
+        paginator = self.pagination_class()
+        paginated_data = paginator.paginate_queryset(sorted_data, request)
+        response = paginator.get_paginated_response(paginated_data)
+        if paginator.page.number > paginator.page.paginator.num_pages:
+            return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
+        return response

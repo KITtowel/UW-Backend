@@ -58,3 +58,14 @@ class StoreDetailSerializer(serializers.ModelSerializer):
             if obj.likes.filter(username=request.user.username).exists():
                 return True
         return False
+
+
+class ReviewListSerializer(serializers.ModelSerializer):
+    store_name = serializers.CharField(source='store.store_name')
+    store_address = serializers.CharField(source='store.store_address')
+    category = serializers.CharField(source='store.category')
+
+    class Meta:
+        model = Review
+        fields = ('id', 'store_name', 'store_address', 'category', 'content', 'rating', 'published_data',
+                  'modified_date', 'reported_num')

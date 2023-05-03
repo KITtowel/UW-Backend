@@ -11,7 +11,7 @@ class ProfileInline(admin.StackedInline):
 
 class UserAdmin(BaseUserAdmin):
     inlines = (ProfileInline, )
-    list_display = ('username', 'email', 'nickname', 'location', 'location2', 'is_staff')
+    list_display = ('id', 'username', 'email', 'nickname', 'location', 'location2', 'is_staff')
 
 
 class WithdrawalAdmin(admin.ModelAdmin):

@@ -37,6 +37,12 @@ urlpatterns = [  # BaseURL 다음 입력할 수 있는 url
     path('admin/', admin.site.urls),
     path('users/', include('users.urls')),
     path('stores/', include('stores.urls')),
+    # # social
+    # path('account/', include('rest_auth.urls')),
+    # path('account/registration/', include('rest_auth.registration.urls')),
+    # path('account/', include('allauth.urls')),
+    # url(r'account/registration/confirm-email/(?P<key>.+)/$', confirm_email, name='confirm_email'),
+    # path('', include('django.contrib.auth.urls')),
 ]
 urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)  # 미디어 경로
 

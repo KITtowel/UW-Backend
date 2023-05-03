@@ -57,6 +57,13 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_yasg',  # api 명세서
     'stores'  # 가맹점 관련
+    # # social
+    # 'django.contrib.sites',
+    # 'allauth',
+    # 'allauth.account',
+    # 'allauth.socialaccount',
+    # 'rest_auth.registration',
+    # 'allauth.socialaccount.providers.kakao',
 ]
 
 AUTH_USER_MODEL = 'users.MyUser'
@@ -135,11 +142,18 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
+        # # social
+        # 'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
     'EXCEPTION_HANDLER': 'config.custom_exception_handler.handle_exception',
+    # # social
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ),
 }
 
 
@@ -172,3 +186,16 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# # social
+# SITE_ID = 1
+#
+# SOCIALACCOUNT_PROVIDERS = {
+#     'kakao': {
+#         'APP': {
+#             'client_id': '9739ee70bd05c484a5fc0b6207c145ed',
+#             'secret': '898423',
+#             'key': ''
+#         }
+#     }
+# }

@@ -171,7 +171,7 @@ class ReviewView(generics.RetrieveUpdateDestroyAPIView):
         self.perform_destroy(instance)
         reviews = Review.objects.filter(store=store)
         rating_mean = reviews.aggregate(Avg('rating'))['rating__avg']
-        store.rating_mean = rating_mean
+        store.rating_mean = rating_mean if rating_mean else 0
         store.save(update_fields=['rating_mean'])
         return Response({'message': '후기글이 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
 

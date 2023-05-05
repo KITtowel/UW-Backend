@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
+from django.views.static import serve
 
 from .settings import MEDIA_ROOT, MEDIA_URL
 from django.conf.urls.static import static
@@ -43,8 +44,9 @@ urlpatterns = [  # BaseURL 다음 입력할 수 있는 url
     # path('account/', include('allauth.urls')),
     # url(r'account/registration/confirm-email/(?P<key>.+)/$', confirm_email, name='confirm_email'),
     # path('', include('django.contrib.auth.urls')),
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': MEDIA_ROOT}),
 ]
-urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)  # 미디어 경로
+# urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)  # 미디어 경로
 
 
 urlpatterns += [  # api 문서 경로

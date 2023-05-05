@@ -14,16 +14,24 @@ from pathlib import Path
 import json
 from django.core.exceptions import ImproperlyConfigured
 
-with open('config/secrets.json') as f:
-    secret = json.loads(f.read())
+# with open('config/secrets.json') as f:
+#     secret = json.loads(f.read())
+#
+#
+# def get_secret(setting, secret=secret):
+#     try:
+#         return secret[setting]
+#     except KeyError:
+#         error_msg = f"Set the {setting} secret"
+#         raise ImproperlyConfigured(error_msg)
 
 
-def get_secret(setting, secret=secret):
-    try:
-        return secret[setting]
-    except KeyError:
-        error_msg = f"Set the {setting} secret"
-        raise ImproperlyConfigured(error_msg)
+def get_env_variable(var_name):
+  try:
+    return os.environ[var_name]
+  except KeyError:
+    error_msg = 'Set the {} environment variable'.format(var_name)
+    raise ImproperlyConfigured(error_msg)
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -33,10 +41,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = get_secret('SECRET_KEY')
+# SECRET_KEY = get_secret('SECRET_KEY')
+SECRET_KEY = get_env_variable('DJANGO_SECRET')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -56,7 +65,8 @@ INSTALLED_APPS = [
     'corsheaders',  # 내 로컬 서버에서 외부 접속 허용
     'django_filters',
     'drf_yasg',  # api 명세서
-    'stores'  # 가맹점 관련
+    'stores',  # 가맹점 관련
+    'sslserver'
     # # social
     # 'django.contrib.sites',
     # 'allauth',
@@ -163,7 +173,8 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_HOST_USER = 'ksum0310@naver.com'
-EMAIL_HOST_PASSWORD = get_secret('EMAIL_HOST_PASSWORD')
+# EMAIL_HOST_PASSWORD = get_secret('EMAIL_HOST_PASSWORD')
+EMAIL_HOST_PASSWORD = get_env_variable('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = 'ksum0310@naver.com'
 PASSWORD_RESET_TIMEOUT_DAYS = 1
 
@@ -184,9 +195,10 @@ LOGIN_URL = '/users/login/'
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # # social
 # SITE_ID = 1
 #

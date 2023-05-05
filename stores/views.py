@@ -29,12 +29,22 @@ class StoreListView(APIView):
 
     def post(self, request):
         try:
-            user_latitude = float(request.data.get('latitude'))
-            user_longitude = float(request.data.get('longitude'))
+            user_latitude = float(request.data.get('latitude'))  # 중앙 위도
+            user_longitude = float(request.data.get('longitude'))  # 중앙 경도
+            ne_latitude = float(request.data.get('ne_latitude'))  # 북동 위도
+            ne_longitude = float(request.data.get('ne_longitude'))  # 북동 경도
+            sw_latitude = float(request.data.get('sw_latitude'))  # 남서 위도
+            sw_longitude = float(request.data.get('sw_longitude'))  # 남서 경도
         except ValueError:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
 
-        store = StoreDaegu.objects.all()
+        # store = StoreDaegu.objects.all()
+        # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링
+        store = StoreDaegu.objects.filter(
+            latitude__gte=sw_latitude, latitude__lte=ne_latitude,
+            longitude__gte=sw_longitude, longitude__lte=ne_longitude,
+        )
+
         serializer = StoreListSerializer(store, many=True,
                                          context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
         sorted_data = sorted(serializer.data, key=itemgetter('distance'))

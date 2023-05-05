@@ -44,9 +44,9 @@ urlpatterns = [  # BaseURL 다음 입력할 수 있는 url
     # path('account/', include('allauth.urls')),
     # url(r'account/registration/confirm-email/(?P<key>.+)/$', confirm_email, name='confirm_email'),
     # path('', include('django.contrib.auth.urls')),
-    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': MEDIA_ROOT}),
+    # re_path(r'^media/(?P<path>.*)$', serve, {'document_root': MEDIA_ROOT}),
 ]
-# urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)  # 미디어 경로
+urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)  # 미디어 경로
 
 
 urlpatterns += [  # api 문서 경로

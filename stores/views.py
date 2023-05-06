@@ -10,6 +10,7 @@ from operator import itemgetter
 from rest_framework import generics, status, permissions
 from django.utils import timezone
 from django.db.models import Avg
+from datetime import datetime
 
 
 class StorePagination(PageNumberPagination):
@@ -245,7 +246,8 @@ class UserReviewListView(APIView):
     def post(self, request):
         reviewed_stores = Review.objects.filter(author=request.user)
         serializer = ReviewListSerializer(reviewed_stores, many=True)
-        sorted_data = sorted(serializer.data, key=itemgetter('store_name'))  # 가맹점 이름 순으로 정렬
+        sorted_data = sorted(serializer.data, key=lambda x: datetime.strptime(x['published_data'],
+                                                                              '%Y-%m-%dT%H:%M:%S.%f%z'), reverse=True)
         paginator = self.pagination_class()
         paginated_data = paginator.paginate_queryset(sorted_data, request)
         response = paginator.get_paginated_response(paginated_data)

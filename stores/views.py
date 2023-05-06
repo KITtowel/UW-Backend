@@ -101,10 +101,26 @@ class LikedCountStoreListView(APIView):
     pagination_class = StorePagination
 
     def post(self, request):
-        store = StoreDaegu.objects.all()
-        serializer = StoreListSerializer(store, many=True)
-        # 좋아요 개수가 같으면 가맹점 이름 순으로 정렬
-        sorted_data = sorted(serializer.data, key=lambda x: (-x['likes_count'], x['store_name']))
+        try:
+            user_latitude = float(request.data.get('latitude'))  # 중앙 위도
+            user_longitude = float(request.data.get('longitude'))  # 중앙 경도
+            ne_latitude = float(request.data.get('ne_latitude'))  # 북동 위도
+            ne_longitude = float(request.data.get('ne_longitude'))  # 북동 경도
+            sw_latitude = float(request.data.get('sw_latitude'))  # 남서 위도
+            sw_longitude = float(request.data.get('sw_longitude'))  # 남서 경도
+        except ValueError:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
+
+        # store = StoreDaegu.objects.all()
+        # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링
+        store = StoreDaegu.objects.filter(
+            latitude__gte=sw_latitude, latitude__lte=ne_latitude,
+            longitude__gte=sw_longitude, longitude__lte=ne_longitude,
+        )
+        serializer = StoreListSerializer(store, many=True,
+                                         context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
+        # 좋아요 개수가 같으면 가까운 가맹점 순으로 정렬, 거리가 같으면 가게 이름순으로 정렬
+        sorted_data = sorted(serializer.data, key=lambda x: (-x['likes_count'], x['distance'], x['store_name']))
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(sorted_data, request)
 
@@ -191,10 +207,26 @@ class MeanRatingStoreListView(APIView):
     pagination_class = StorePagination
 
     def post(self, request):
-        store = StoreDaegu.objects.all()
-        serializer = StoreListSerializer(store, many=True)
-        # 평균 평점이 같으면 가맹점 이름 순으로 정렬
-        sorted_data = sorted(serializer.data, key=lambda x: (-x['rating_mean'], x['store_name']))
+        try:
+            user_latitude = float(request.data.get('latitude'))  # 중앙 위도
+            user_longitude = float(request.data.get('longitude'))  # 중앙 경도
+            ne_latitude = float(request.data.get('ne_latitude'))  # 북동 위도
+            ne_longitude = float(request.data.get('ne_longitude'))  # 북동 경도
+            sw_latitude = float(request.data.get('sw_latitude'))  # 남서 위도
+            sw_longitude = float(request.data.get('sw_longitude'))  # 남서 경도
+        except ValueError:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
+
+        # store = StoreDaegu.objects.all()
+        # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링
+        store = StoreDaegu.objects.filter(
+            latitude__gte=sw_latitude, latitude__lte=ne_latitude,
+            longitude__gte=sw_longitude, longitude__lte=ne_longitude,
+        )
+        serializer = StoreListSerializer(store, many=True,
+                                         context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
+        # 평균 평점이 같으면 가까운 가맹점 순으로 정렬, 거리가 같으면 가게 이름순으로 정렬
+        sorted_data = sorted(serializer.data, key=lambda x: (-x['rating_mean'], x['distance'], x['store_name']))
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(sorted_data, request)
 

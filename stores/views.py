@@ -169,6 +169,8 @@ class ReviewView(generics.RetrieveUpdateDestroyAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
+        if instance.author != self.request.user:
+            return Response({'message': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 

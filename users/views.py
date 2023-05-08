@@ -10,6 +10,7 @@ from django.contrib.auth.forms import PasswordResetForm
 from django.core.exceptions import ValidationError
 from rest_framework.request import Request
 
+
 class RegisterView(generics.CreateAPIView):
     queryset = MyUser.objects.all()
     serializer_class = RegisterSerializer
@@ -100,6 +101,26 @@ class CustomPasswordResetView(APIView):  # 이메일 입력받아서 비밀번�
                 return Response({'message': '입력값이 올바르지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'message': '해당하는 사용자가 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LeftMoneyCheckView(APIView):
+    def get_object(self, pk):
+        try:
+            return Profile.objects.get(user__pk=pk)
+        except Profile.DoesNotExist:
+            raise Response({'message': '회원 정보가 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request, pk):
+        profile = self.get_object(pk)
+        url_mapping = {
+            "대구광역시": "https://www.shinhancard.com/mob/MOBFM064N/MOBFM064R01.shc",
+            "경상북도": "http://gb.nhdream.co.kr/Login/PointCheck.jsp",
+        }
+        url = url_mapping.get(profile.location)
+        if url:
+            return Response({'url': url}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': '해당 지역에 매핑되는 잔액조회 사이트가 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 # # kakao social

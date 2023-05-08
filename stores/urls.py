@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import StoreListView, StoreLikeView, LikedStoreListView, StoreDetailView, \
-    ReviewCreateView, ReviewView, UserReviewListView, ReviewReportView, CategoryListView
+    ReviewCreateView, ReviewView, UserReviewListView, ReviewReportView, CategoryListView, SearchListView
 
 urlpatterns = [
     path('distance_order/', StoreListView.as_view(), name='distance_list'),  # 거리순 가맹점 리스트 반환
@@ -16,7 +16,7 @@ urlpatterns = [
     path('category_distance_order/', CategoryListView.as_view(), name='category_distance'),  # 카테고리별 가맹점 리스트 반환 (거리순)
     path('category_like_order/', CategoryListView.as_view(), name='category_like'),  # 카테고리별 가맹점 리스트 반환 (좋아요순)
     path('category_rating_order/', CategoryListView.as_view(), name='category_rating'),  # 카테고리별 가맹점 리스트 반환 (평점순)
-    # path('search_distance_order/', SearchListView.as_view(), name='search_distance'),  # 검색어 기반 가맹점 리스트 반환 (거리순)
-    # path('search_like_order/', SearchListView.as_view(), name='search_like'),  # 검색어 기반 리스트 반환 (좋아요순)
-    # path('search_rating_order/', SearchListView.as_view(), name='search_rating'),  # 검색어 기반 가맹점 리스트 반환 (평점순)
+    path('search_distance_order/', SearchListView.as_view(), name='search_distance'),  # 검색어 기반 가맹점 리스트 반환 (거리순)
+    path('search_like_order/', SearchListView.as_view(), name='search_like'),  # 검색어 기반 리스트 반환 (좋아요순)
+    path('search_rating_order/', SearchListView.as_view(), name='search_rating'),  # 검색어 기반 가맹점 리스트 반환 (평점순)
 ]

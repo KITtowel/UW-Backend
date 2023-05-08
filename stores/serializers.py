@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import StoreDaegu, Review
-import math
+from haversine import haversine
 from django.core.validators import MinLengthValidator, MinValueValidator
 from users.serializers import ProfileSerializer
 
@@ -15,9 +15,15 @@ class StoreListSerializer(serializers.ModelSerializer):
 
     def get_distance(self, obj):
         if 'user_latitude' in self.context and 'user_longitude' in self.context:
-            user_latitude = self.context['user_latitude']
-            user_longitude = self.context['user_longitude']
-            distance = math.sqrt((obj.latitude - user_latitude) ** 2 + (obj.longitude - user_longitude) ** 2)
+            # 일직선상 거리 공식 -> 지구는 둥글기 때문에 정확하지 않음
+            # user_latitude = self.context['user_latitude']
+            # user_longitude = self.context['user_longitude']
+            # distance = math.sqrt((obj.latitude - user_latitude) ** 2 + (obj.longitude - user_longitude) ** 2)
+        
+            # 하버사인(haversine)공식: 둥근 지구 표면에 있는 두 지점 사이의 직선 거리 구하는 공식
+            user_point = (self.context['user_latitude'], self.context['user_longitude'])  # 사용자 현재 위치 위도, 경도
+            store_point = (obj.latitude, obj.longitude)
+            distance = haversine(user_point, store_point, unit='mi')  # 단위는 MILES
             return distance
         else:
             return None

@@ -11,6 +11,8 @@ from rest_framework import generics, status, permissions
 from django.utils import timezone
 from django.db.models import Avg
 from datetime import datetime
+from django.db.models.functions import Replace
+from django.db.models import Value
 
 
 class StorePagination(PageNumberPagination):
@@ -240,7 +242,6 @@ class CategoryListView(APIView):
         except ValueError:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
 
-        # store = StoreDaegu.objects.all()  # 모든 가게들 정보 가져오기
         # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링, 사용자가 선택한 카테고리와 같은 카테고리의 가게만 필터링
         store = StoreDaegu.objects.filter(
             latitude__gte=sw_latitude, latitude__lte=ne_latitude,
@@ -286,21 +287,20 @@ class SearchListView(APIView):
         except ValueError:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
 
-        # stores = StoreDaegu.objects.all()  # 모든 가게들 정보 가져오기
         # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링, 검색어 기반으로 가맹점 이름이나 메뉴에 일치하는 값이 있는 가맹점 필터링
-        # search = search.replace(" ", "").strip()
+        search = search.replace(" ", "").strip()
         if search_type == "가게명":
-            store = StoreDaegu.objects.filter(
-                latitude__gte=sw_latitude, latitude__lte=ne_latitude,
-                longitude__gte=sw_longitude, longitude__lte=ne_longitude,
-                store_name__contains=search
-            )
+            store = StoreDaegu.objects.annotate(
+                re_store_name=Replace('store_name', Value(" "), Value(""))
+            ).filter(latitude__gte=sw_latitude, latitude__lte=ne_latitude, longitude__gte=sw_longitude,
+                     longitude__lte=ne_longitude, re_store_name__contains=search
+                     )
         elif search_type == "메뉴":
-            store = StoreDaegu.objects.filter(
-                latitude__gte=sw_latitude, latitude__lte=ne_latitude,
-                longitude__gte=sw_longitude, longitude__lte=ne_longitude,
-                menu__contains=search
-            )
+            store = StoreDaegu.objects.annotate(
+                re_menu=Replace('menu', Value(" "), Value(""))
+            ).filter(latitude__gte=sw_latitude, latitude__lte=ne_latitude, longitude__gte=sw_longitude,
+                     longitude__lte=ne_longitude, re_menu__contains=search
+                     )
 
         serializer = StoreListSerializer(store, many=True,
                                          context={'user_latitude': user_latitude, 'user_longitude': user_longitude})

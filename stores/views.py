@@ -24,7 +24,7 @@ class StorePagination(PageNumberPagination):
         return response
 
 
-# 가까운 거리순으로 가맹점 리스트 반환
+# 거리순, 좋아요순, 평점순으로 가맹점 리스트 반환
 class StoreListView(APIView):
     pagination_class = StorePagination
 
@@ -39,7 +39,7 @@ class StoreListView(APIView):
         except ValueError:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
 
-        # store = StoreDaegu.objects.all()
+        # store = StoreDaegu.objects.all()  # 모든 가게들 정보 가져오기
         # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링
         store = StoreDaegu.objects.filter(
             latitude__gte=sw_latitude, latitude__lte=ne_latitude,
@@ -48,7 +48,15 @@ class StoreListView(APIView):
 
         serializer = StoreListSerializer(store, many=True,
                                          context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
-        sorted_data = sorted(serializer.data, key=itemgetter('distance'))
+
+        order_by = request.resolver_match.url_name
+        if order_by == 'distance_list':  # 거리가 가까운 순으로 정렬, 거리가 같으면 가맹점 이름순으로 정렬
+            sorted_data = sorted(serializer.data, key=lambda x: (x['distance'], x['store_name']))
+        elif order_by == 'like_list':  # 좋아요 개수가 많은 순으로 정렬, 좋아요 개수가 같으면 거리순 정렬, 거리가 같으면 가맹점 이름순으로 정렬
+            sorted_data = sorted(serializer.data, key=lambda x: (-x['likes_count'], x['distance'], x['store_name']))
+        elif order_by == 'rating_list':  # 평균 평점이 높은 순으로 정렬, 평균 평점이 같으면 거리순 정렬, 거리가 같으면 가맹점 이름순으로 정렬
+            sorted_data = sorted(serializer.data, key=lambda x: (-x['rating_mean'], x['distance'], x['store_name']))
+
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(sorted_data, request)
 
@@ -95,41 +103,6 @@ class LikedStoreListView(APIView):
         if paginator.page.number > paginator.page.paginator.num_pages:
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
         return response
-
-
-# 좋아요 개수가 많은 순으로 가맹점 리스트 반환
-class LikedCountStoreListView(APIView):
-    pagination_class = StorePagination
-
-    def post(self, request):
-        try:
-            user_latitude = float(request.data.get('latitude'))  # 중앙 위도
-            user_longitude = float(request.data.get('longitude'))  # 중앙 경도
-            ne_latitude = float(request.data.get('ne_latitude'))  # 북동 위도
-            ne_longitude = float(request.data.get('ne_longitude'))  # 북동 경도
-            sw_latitude = float(request.data.get('sw_latitude'))  # 남서 위도
-            sw_longitude = float(request.data.get('sw_longitude'))  # 남서 경도
-        except ValueError:
-            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
-
-        # store = StoreDaegu.objects.all()
-        # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링
-        store = StoreDaegu.objects.filter(
-            latitude__gte=sw_latitude, latitude__lte=ne_latitude,
-            longitude__gte=sw_longitude, longitude__lte=ne_longitude,
-        )
-        serializer = StoreListSerializer(store, many=True,
-                                         context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
-        # 좋아요 개수가 같으면 가까운 가맹점 순으로 정렬, 거리가 같으면 가게 이름순으로 정렬
-        sorted_data = sorted(serializer.data, key=lambda x: (-x['likes_count'], x['distance'], x['store_name']))
-        paginator = self.pagination_class()
-        result_page = paginator.paginate_queryset(sorted_data, request)
-
-        current_page = paginator.page.number
-        if current_page > 10:
-            return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
-
-        return paginator.get_paginated_response(result_page)
 
 
 # 가맹점 상세보기
@@ -205,41 +178,6 @@ class ReviewView(generics.RetrieveUpdateDestroyAPIView):
         return Response({'message': '후기글이 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
 
 
-# 평균 평점이 높은 순으로 가맹점 리스트 반환
-class MeanRatingStoreListView(APIView):
-    pagination_class = StorePagination
-
-    def post(self, request):
-        try:
-            user_latitude = float(request.data.get('latitude'))  # 중앙 위도
-            user_longitude = float(request.data.get('longitude'))  # 중앙 경도
-            ne_latitude = float(request.data.get('ne_latitude'))  # 북동 위도
-            ne_longitude = float(request.data.get('ne_longitude'))  # 북동 경도
-            sw_latitude = float(request.data.get('sw_latitude'))  # 남서 위도
-            sw_longitude = float(request.data.get('sw_longitude'))  # 남서 경도
-        except ValueError:
-            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
-
-        # store = StoreDaegu.objects.all()
-        # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링
-        store = StoreDaegu.objects.filter(
-            latitude__gte=sw_latitude, latitude__lte=ne_latitude,
-            longitude__gte=sw_longitude, longitude__lte=ne_longitude,
-        )
-        serializer = StoreListSerializer(store, many=True,
-                                         context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
-        # 평균 평점이 같으면 가까운 가맹점 순으로 정렬, 거리가 같으면 가게 이름순으로 정렬
-        sorted_data = sorted(serializer.data, key=lambda x: (-x['rating_mean'], x['distance'], x['store_name']))
-        paginator = self.pagination_class()
-        result_page = paginator.paginate_queryset(sorted_data, request)
-
-        current_page = paginator.page.number
-        if current_page > 10:
-            return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
-
-        return paginator.get_paginated_response(result_page)
-
-
 # 사용자가 작성한 후기글 리스트 반환
 class UserReviewListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -258,6 +196,7 @@ class UserReviewListView(APIView):
         return response
 
 
+# 가맹점 후기글 신고
 class ReviewReportView(APIView):
     permission_classes = [IsAuthenticated]
     queryset = Review.objects.all()
@@ -283,3 +222,11 @@ class ReviewReportView(APIView):
                 return Response({'message': '신고가 정상적으로 접수되었습니다.'}, status=status.HTTP_200_OK)
         else:
             return Response({'message': '자신의 게시글은 신고할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# 카테고리별 가맹점 리스트 반환
+# class CategoryStoreListView(APIView):
+
+
+# 검색어 키워드별 가맹점 리스트 반환
+# class SearchStoreListVie(APIView):

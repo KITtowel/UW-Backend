@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.db.models import Avg
 from datetime import datetime
 from django.db.models.functions import Replace
-from django.db.models import Value
+from django.db.models import Value, Q
 
 
 class StorePagination(PageNumberPagination):
@@ -242,12 +242,16 @@ class CategoryListView(APIView):
         except ValueError:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
 
+        category_list = select_category.split()
+        category_set = Q(category__exact=category_list[0])
+        if len(category_list) > 1:
+            for category in category_list[1:]:
+                category_set.add(Q(category__exact=category), category_set.OR)
+
         # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링, 사용자가 선택한 카테고리와 같은 카테고리의 가게만 필터링
         store = StoreDaegu.objects.filter(
             latitude__gte=sw_latitude, latitude__lte=ne_latitude,
-            longitude__gte=sw_longitude, longitude__lte=ne_longitude,
-            category__exact=select_category
-        )
+            longitude__gte=sw_longitude, longitude__lte=ne_longitude).filter(category_set)
 
         serializer = StoreListSerializer(store, many=True,
                                          context={'user_latitude': user_latitude, 'user_longitude': user_longitude})

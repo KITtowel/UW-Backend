@@ -46,12 +46,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 class StoreDetailSerializer(serializers.ModelSerializer):
     liked_by_user = serializers.SerializerMethodField()
     reviews = ReviewSerializer(many=True, read_only=True)
-    reviews_count = serializers.SerializerMethodField()
 
     class Meta:
         model = StoreDaegu
         fields = ('store_id', 'store_name', 'store_address', 'category', 'latitude', 'longitude',
-                  'rating_mean', 'liked_by_user', 'likes_count', 'menu', 'reviews_count', 'reviews')
+                  'rating_mean', 'liked_by_user', 'likes_count', 'menu', 'reviews')
 
     def get_liked_by_user(self, obj):
         request = self.context.get('request')
@@ -59,9 +58,6 @@ class StoreDetailSerializer(serializers.ModelSerializer):
             if obj.likes.filter(username=request.user.username).exists():
                 return True
         return False
-
-    def get_reviews_count(self, obj):
-        return obj.reviews.count()
 
 
 class ReviewListSerializer(serializers.ModelSerializer):

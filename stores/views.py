@@ -14,7 +14,7 @@ from datetime import datetime
 
 
 class StorePagination(PageNumberPagination):
-    page_size = 10  # 한 페이지에 나타내는 가게 개수
+    page_size = 20  # 한 페이지에 나타내는 가게 개수
     page_size_query_param = 'page_size'
 
     def get_paginated_response(self, data):  # 최대 페이지 10페이지로 제한

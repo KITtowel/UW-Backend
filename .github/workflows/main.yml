@@ -3,5 +3,23 @@ on: push
 jobs:
   echo:
     runs-on: ubuntu-latest
-    steps:
-      - run: echo 'Hello, GitHub Actions!'
+    steps: 
+      - name: emailhostpassword
+        run: |
+          echo $EMAIL_HOST_PASSWORD >> secrets.json
+        env:
+          EMAIL_HOST_PASSWORD: ${{secrets.EMAIL_HOST_PASSWORD}}
+
+      - name: maindomain
+        run: |
+          echo $MAIN_DOMAIN >> secrets.json
+        env:
+          MAIN_DOMAIN: ${{secrets.MAIN_DOMAIN}}
+
+      - name: secretkey
+        run: |
+          echo $SECRET_KEY >> secrets.json
+        env:
+          SECRET_KEY: ${{secrets.SECRET_KEY}}
+
+

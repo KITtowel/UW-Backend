@@ -1,7 +1,0 @@
-name: Our First Workflow
-on: push
-jobs:
-  echo:
-    runs-on: ubuntu-latest
-    setps:
-      - run: echo 'Hello, GitHub Actions!'

@@ -22,30 +22,6 @@ class MapMarkSerializer(serializers.ModelSerializer):
             return None
 
 
-class StoreListSerializer(serializers.ModelSerializer):
-    distance = serializers.SerializerMethodField()
-
-    class Meta:
-        model = StoreDaegu
-        fields = ('store_id', 'store_name', 'store_address', 'category', 'latitude', 'longitude',
-                  'rating_mean', 'likes_count', 'distance')
-
-    def get_distance(self, obj):
-        if 'user_latitude' in self.context and 'user_longitude' in self.context:
-            # 일직선상 거리 공식 -> 지구는 둥글기 때문에 정확하지 않음
-            # user_latitude = self.context['user_latitude']
-            # user_longitude = self.context['user_longitude']
-            # distance = math.sqrt((obj.latitude - user_latitude) ** 2 + (obj.longitude - user_longitude) ** 2)
-        
-            # 하버사인(haversine)공식: 둥근 지구 표면에 있는 두 지점 사이의 직선 거리 구하는 공식
-            user_point = (self.context['user_latitude'], self.context['user_longitude'])  # 사용자 현재 위치 위도, 경도
-            store_point = (obj.latitude, obj.longitude)
-            distance = haversine(user_point, store_point, unit='mi')  # 단위는 MILES
-            return distance
-        else:
-            return None
-
-
 class ReviewCreateSerializer(serializers.ModelSerializer):
     content = serializers.CharField(max_length=200, validators=[MinLengthValidator(10)])
     rating = serializers.FloatField(validators=[MinValueValidator(1.0)])
@@ -64,6 +40,34 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ('id', 'author', 'profile', 'store', 'content', 'rating', 'published_data',
                   'modified_date', 'reported_num')
+
+
+class StoreListSerializer(serializers.ModelSerializer):
+    distance = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StoreDaegu
+        fields = ('store_id', 'store_name', 'store_address', 'category', 'latitude', 'longitude',
+                  'rating_mean', 'likes_count', 'reviews_count', 'distance')
+
+    def get_distance(self, obj):
+        if 'user_latitude' in self.context and 'user_longitude' in self.context:
+            # 일직선상 거리 공식 -> 지구는 둥글기 때문에 정확하지 않음
+            # user_latitude = self.context['user_latitude']
+            # user_longitude = self.context['user_longitude']
+            # distance = math.sqrt((obj.latitude - user_latitude) ** 2 + (obj.longitude - user_longitude) ** 2)
+
+            # 하버사인(haversine)공식: 둥근 지구 표면에 있는 두 지점 사이의 직선 거리 구하는 공식
+            user_point = (self.context['user_latitude'], self.context['user_longitude'])  # 사용자 현재 위치 위도, 경도
+            store_point = (obj.latitude, obj.longitude)
+            distance = haversine(user_point, store_point, unit='mi')  # 단위는 MILES
+            return distance
+        else:
+            return None
+
+    def get_reviews_count(self, obj):
+        return obj.reviews.count()
 
 
 class StoreDetailSerializer(serializers.ModelSerializer):

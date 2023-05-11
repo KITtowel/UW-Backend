@@ -5,6 +5,23 @@ from django.core.validators import MinLengthValidator, MinValueValidator
 from users.serializers import ProfileSerializer
 
 
+class MapMarkSerializer(serializers.ModelSerializer):
+    distance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StoreDaegu
+        fields = ('store_id', 'category', 'latitude', 'longitude', 'distance')
+
+    def get_distance(self, obj):
+        if 'user_latitude' in self.context and 'user_longitude' in self.context:
+            user_point = (self.context['user_latitude'], self.context['user_longitude'])  # 사용자 현재 위치 위도, 경도
+            store_point = (obj.latitude, obj.longitude)
+            distance = haversine(user_point, store_point, unit='mi')  # 단위는 MILES
+            return distance
+        else:
+            return None
+
+
 class StoreListSerializer(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField()
 

@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from .models import StoreDaegu, Review, Report
 from users.models import Profile
 from .serializers import StoreListSerializer, StoreDetailSerializer, ReviewCreateSerializer, ReviewSerializer, \
-    ReviewListSerializer
+    ReviewListSerializer, MapMarkSerializer
 from rest_framework.pagination import PageNumberPagination
 from operator import itemgetter
 from rest_framework import generics, status, permissions
@@ -344,11 +344,12 @@ class MapMarkView(APIView):
             latitude__gte=sw_latitude, latitude__lte=ne_latitude,
             longitude__gte=sw_longitude, longitude__lte=ne_longitude,
         )
-        serializer = StoreListSerializer(store, many=True,
-                                         context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
-        count = len(serializer.data)
+        serializer = MapMarkSerializer(store, many=True,
+                                       context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
+        sorted_data = sorted(serializer.data, key=lambda x: (x['distance']))
+        count = len(sorted_data)
         response_data = {
             'count': count,
-            'data': serializer.data
+            'data': sorted_data
         }
         return Response(data=response_data, status=status.HTTP_200_OK)

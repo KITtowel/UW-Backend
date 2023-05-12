@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import StoreDaegu, Review
 from haversine import haversine
+from datetime import datetime
 from django.core.validators import MinLengthValidator, MinValueValidator
 from users.serializers import ProfileSerializer
 
@@ -72,7 +73,7 @@ class StoreListSerializer(serializers.ModelSerializer):
 
 class StoreDetailSerializer(serializers.ModelSerializer):
     liked_by_user = serializers.SerializerMethodField()
-    reviews = ReviewSerializer(many=True, read_only=True)
+    reviews = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -89,6 +90,31 @@ class StoreDetailSerializer(serializers.ModelSerializer):
 
     def get_reviews_count(self, obj):
         return obj.reviews.count()
+
+    def get_reviews(self, obj):
+        full_data = []
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            if obj.reviews.filter(author=request.user.id).exists():
+                first_batch = obj.reviews.filter(author=request.user.id)
+                first_batch_serializer = ReviewSerializer(first_batch, many=True,
+                                                          context={'request': self.context.get('request')}).data
+                remain_batch = obj.reviews.exclude(author=request.user.id)
+                remain_batch_serializer = ReviewSerializer(remain_batch, many=True,
+                                                           context={'request': self.context.get('request')}).data
+                first_data = sorted(first_batch_serializer,
+                                    key=lambda x: datetime.strptime(x['published_data'].strftime('%Y-%m-%d %H:%M:%S'),
+                                                                    '%Y-%m-%d %H:%M:%S'), reverse=True)
+                remain_data = sorted(remain_batch_serializer,
+                                     key=lambda x: datetime.strptime(x['published_data'].strftime('%Y-%m-%d %H:%M:%S'),
+                                                                     '%Y-%m-%d %H:%M:%S'), reverse=True)
+                full_data = first_data + remain_data
+        else:
+            serializer = ReviewSerializer(obj.reviews, many=True, context={'request': self.context.get('request')}).data
+            full_data = sorted(serializer,
+                               key=lambda x: datetime.strptime(x['published_data'].strftime('%Y-%m-%d %H:%M:%S'),
+                                                               '%Y-%m-%d %H:%M:%S'), reverse=True)
+        return full_data
 
 
 class ReviewListSerializer(serializers.ModelSerializer):

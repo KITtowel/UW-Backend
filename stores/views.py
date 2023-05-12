@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from .models import StoreDaegu, Review, Report
 from users.models import Profile
 from .serializers import StoreListSerializer, StoreDetailSerializer, ReviewCreateSerializer, ReviewSerializer, \
-    ReviewListSerializer, MapMarkSerializer
+    ReviewListSerializer, MapMarkSerializer, LikedListSerializer
 from rest_framework.pagination import PageNumberPagination
 from operator import itemgetter
 from rest_framework import generics, status, permissions
@@ -97,8 +97,8 @@ class LikedStoreListView(APIView):
     def post(self, request):
         user = request.user
         liked_stores = user.like_posts.all()
-        serializer = StoreListSerializer(liked_stores, many=True)
-        sorted_data = sorted(serializer.data, key=itemgetter('store_name'))  # 가맹점 이름 순으로 정렬
+        serializer = LikedListSerializer(liked_stores, many=True, context={'user': user})
+        sorted_data = sorted(serializer.data, key=itemgetter('liked_id'), reverse=True)
         paginator = self.pagination_class()
         paginated_data = paginator.paginate_queryset(sorted_data, request)
         response = paginator.get_paginated_response(paginated_data)

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import StoreDaegu, Review
+from users.models import MyUser
 from haversine import haversine
 from datetime import datetime
 from django.core.validators import MinLengthValidator, MinValueValidator
@@ -126,3 +127,16 @@ class ReviewListSerializer(serializers.ModelSerializer):
         model = Review
         fields = ('id', 'store_name', 'store_address', 'category', 'content', 'rating', 'published_data',
                   'modified_date', 'reported_num')
+
+
+class LikedListSerializer(serializers.ModelSerializer):
+    liked_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StoreDaegu
+        fields = ('store_id', 'store_name', 'store_address', 'category', 'rating_mean', 'likes_count', 'liked_id')
+
+    def get_liked_id(self, obj):
+        user = MyUser.objects.get(username=self.context.get('user'))
+        likes_instance = obj.likes.through.objects.filter(storedaegu_id=obj.id, myuser_id=user.id).first()
+        return likes_instance.id

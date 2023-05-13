@@ -110,7 +110,7 @@ class LeftMoneyCheckView(APIView):
         except Profile.DoesNotExist:
             raise Response({'message': '회원 정보가 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
-    def post(self, request, pk):
+    def get(self, request, pk):
         profile = self.get_object(pk)
         url_mapping = {
             "대구광역시": "https://www.shinhancard.com/mob/MOBFM064N/MOBFM064R01.shc",

@@ -88,6 +88,13 @@ class ProfileSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({'nickname': '이미 사용 중인 닉네임입니다.'})
         instance.location2 = validated_data.get('location2', instance.location2)
         instance.save()
+
+        my_user = instance.user
+        my_user.nickname = instance.nickname
+        my_user.location = instance.location
+        my_user.location2 = instance.location2
+        my_user.save()
+
         return super().update(instance, validated_data)
 
 

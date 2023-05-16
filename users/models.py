@@ -5,14 +5,14 @@ from django.contrib.auth.models import AbstractUser
 
 
 class MyUser(AbstractUser):
-    nickname = models.CharField(max_length=10, blank=False, null=False, unique=True)
+    nickname = models.CharField(max_length=20, blank=False, null=False, unique=True)
     location = models.CharField(max_length=20, blank=False, null=False)
     location2 = models.CharField(max_length=20, blank=True, default='')
 
 
 class Profile(models.Model):  # 프로필 모델 MyUser 모델과 일대일 관계
     user = models.OneToOneField(MyUser, on_delete=models.CASCADE, primary_key=True)
-    nickname = models.CharField(max_length=10, blank=False, null=False, unique=True)
+    nickname = models.CharField(max_length=20, blank=False, null=False, unique=True)
     location = models.CharField(max_length=20, blank=False, null=False)
     location2 = models.CharField(max_length=20, blank=True, default='')
     image = models.ImageField(upload_to="profile/", default='default.png')

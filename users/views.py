@@ -74,9 +74,11 @@ class NaverCallbackView(APIView):
                 return Response({"message": "failed to get email."}, status=status.HTTP_400_BAD_REQUEST)
             user_info = user_info_request.json().get("response")
             email = user_info["email"]
-            nickname = user_info["nickname"]
-
-            if MyUser.objects.filter(nickname=nickname).exists():
+            try:
+                nickname = user_info["nickname"]
+                if MyUser.objects.filter(nickname=nickname).exists():
+                    nickname = f"Naver_{email.split('@')[0]}"
+            except:
                 nickname = f"Naver_{email.split('@')[0]}"
 
             # User 의 email 을 받아오지 못한 경우

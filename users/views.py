@@ -74,12 +74,10 @@ class NaverCallbackView(APIView):
                 return Response({"message": "failed to get email."}, status=status.HTTP_400_BAD_REQUEST)
             user_info = user_info_request.json().get("response")
             email = user_info["email"]
-            # nickname = user_info["nickname"]
-            # print(nickname)
-            # location = "거주지_선택"
-            #
-            # if MyUser.objects.filter(nickname=nickname).exists():
-            #     nickname = f"Naver_{email.split('@')[0]}"
+            nickname = user_info["nickname"]
+
+            if MyUser.objects.filter(nickname=nickname).exists():
+                nickname = f"Naver_{email.split('@')[0]}"
 
             # User 의 email 을 받아오지 못한 경우
             if email is None:
@@ -89,7 +87,7 @@ class NaverCallbackView(APIView):
 
             try:
                 user = MyUser.objects.get(email=email)
-                data = {'access_token': access_token, 'code': code}
+                data = {'access_token': access_token, 'code': code, 'nickname': nickname}
                 # accept 에는 token 값이 json 형태로 들어온다({"key"}:"token value")
                 # 여기서 오는 key 값은 authtoken_token에 저장된다.
                 accept = requests.post(
@@ -101,7 +99,7 @@ class NaverCallbackView(APIView):
                 return Response(accept.json(), status=status.HTTP_200_OK)
 
             except MyUser.DoesNotExist:
-                data = {'access_token': access_token, 'refresh_token': refresh_token, 'code': code}
+                data = {'access_token': access_token, 'code': code, 'nickname': nickname}
                 accept = requests.post(
                     f"{main_domain}/users/naver/success/", data=data
                 )
@@ -117,6 +115,22 @@ class NaverCallbackView(APIView):
 class NaverToDjLoginView(SocialLoginView):
     adapter_class = naver_views.NaverOAuth2Adapter
     client_class = OAuth2Client
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs).data
+        profile = Profile.objects.get(user=self.request.user)
+        social_user = profile.user
+        social_user.location = "거주지_선택"
+        social_user.nickname = request.data.get('nickname')
+        profile.location = "거주지_선택"
+        profile.nickname = request.data.get('nickname')
+        social_user.save()
+        profile.save()
+        additional_data = {
+            "user_id": profile.pk
+        }
+        response.update(additional_data)
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class RegisterView(generics.CreateAPIView):

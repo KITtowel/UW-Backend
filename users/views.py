@@ -1,3 +1,4 @@
+from json import JSONDecodeError
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
@@ -9,6 +10,113 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.forms import PasswordResetForm
 from django.core.exceptions import ValidationError
 from rest_framework.request import Request
+from django.conf import settings
+from django.shortcuts import redirect
+from allauth.socialaccount.providers.naver import views as naver_views
+from allauth.socialaccount.providers.kakao import views as kakao_views
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+import requests
+
+main_domain = settings.MAIN_DOMAIN
+
+
+class NaverLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        client_id = settings.NAVER_CLIENT_ID
+        response_type = "code"
+        uri = main_domain + "/users/naver/callback/"
+        state = settings.STATE
+        url = "https://nid.naver.com/oauth2.0/authorize"
+        return redirect(
+            f'{url}?response_type={response_type}&client_id={client_id}&redirect_uri={uri}&state={state}'
+        )
+
+
+class NaverCallbackView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            # 네이버 로그인 Parameters
+            grant_type = 'authorization_code'
+            client_id = settings.NAVER_CLIENT_ID
+            client_secret = settings.NAVER_CLIENT_SECRET
+            code = request.GET.get('code')
+            state = request.GET.get('state')
+
+            parameters = f"grant_type={grant_type}&client_id={client_id}&client_secret={client_secret}&code={code}&state={state}"
+
+            # token request
+            token_request = requests.get(
+                f"https://nid.naver.com/oauth2.0/token?{parameters}"
+            )
+
+            token_response_json = token_request.json()
+            error = token_response_json.get("error", None)
+
+            if error is not None:
+                raise JSONDecodeError(error)
+
+            access_token = token_response_json.get("access_token")
+            refresh_token = token_response_json.get("refresh_token")
+
+            # User info get request
+            user_info_request = requests.get(
+                "https://openapi.naver.com/v1/nid/me",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+
+            # User 정보를 가지고 오는 요청이 잘못된 경우
+            if user_info_request.status_code != 200:
+                return Response({"message": "failed to get email."}, status=status.HTTP_400_BAD_REQUEST)
+            user_info = user_info_request.json().get("response")
+            email = user_info["email"]
+            # nickname = user_info["nickname"]
+            # print(nickname)
+            # location = "거주지_선택"
+            #
+            # if MyUser.objects.filter(nickname=nickname).exists():
+            #     nickname = f"Naver_{email.split('@')[0]}"
+
+            # User 의 email 을 받아오지 못한 경우
+            if email is None:
+                return Response({
+                    "error": "네이버로 부터 이메일 정보를 받아올 수 없습니다."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                user = MyUser.objects.get(email=email)
+                data = {'access_token': access_token, 'code': code}
+                # accept 에는 token 값이 json 형태로 들어온다({"key"}:"token value")
+                # 여기서 오는 key 값은 authtoken_token에 저장된다.
+                accept = requests.post(
+                    f"{main_domain}/users/naver/success/", data=data
+                )
+                # 만약 token 요청이 제대로 이루어지지 않으면 오류처리
+                if accept.status_code != 200:
+                    return Response({"error": "회원가입 하는데 실패했습니다."}, status=accept.status_code)
+                return Response(accept.json(), status=status.HTTP_200_OK)
+
+            except MyUser.DoesNotExist:
+                data = {'access_token': access_token, 'refresh_token': refresh_token, 'code': code}
+                accept = requests.post(
+                    f"{main_domain}/users/naver/success/", data=data
+                )
+                # token 발급
+                return Response(accept.json(), status=status.HTTP_200_OK)
+
+        except:
+            return Response({
+                "error": "error",
+            }, status=status.HTTP_404_NOT_FOUND)
+
+
+class NaverToDjLoginView(SocialLoginView):
+    adapter_class = naver_views.NaverOAuth2Adapter
+    client_class = OAuth2Client
 
 
 class RegisterView(generics.CreateAPIView):
@@ -121,70 +229,3 @@ class LeftMoneyCheckView(APIView):
             return Response({'url': url}, status=status.HTTP_200_OK)
         else:
             return Response({'message': '해당 지역에 매핑되는 잔액조회 사이트가 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
-
-
-# # kakao social
-# def oauth(request):
-#     code = request.GET['code']
-#     print('code = ' + str(code))
-#
-#     secret_file = os.path.join(BASE_DIR, 'secrets.json')
-#
-#     with open(secret_file) as f:
-#         secrets = json.loads(f.read())
-#
-#     def get_secret(setting, secrets=secrets):
-#         try:
-#             return secrets[setting]
-#         except KeyError:
-#             error_msg = "Set the {} environment variable".format(setting)
-#             raise ImproperlyConfigured(error_msg)
-#
-#     KAKAO_CLIENT_ID = get_secret("KAKAO_CLIENT_ID")  # secrets.json에서 ID, Secret Key 받아옴
-#     # KAKAO_CLIENT_SECRET = get_secret("KAKAO_CLIENT_SECRET")
-#
-#     redirect_uri = 'http://127.0.0.1:8000/user/login/kakao/callback'
-#
-#     # request로 받은 code로 access_token 받아오기
-#     access_token_request_uri = 'https://kauth.kakao.com/oauth/token?grant_type=authorization_code&'
-#     access_token_request_uri += 'client_id=' + KAKAO_CLIENT_ID
-#     access_token_request_uri += '&code=' + code
-#     access_token_request_uri += '&redirect_uri=' + redirect_uri
-#
-#     access_token_request_uri_data = requests.get(access_token_request_uri)
-#     json_data = access_token_request_uri_data.json()  # json 형태로 데이터 저장
-#     access_token = json_data['access_token']  # 액세스 토큰 꺼내와서 저장
-#
-#     # 프로필 정보 받아오기
-#     headers = ({'Authorization': f"Bearer {access_token}"})  # header에 꼭 설정해야 함
-#
-#     user_profile_info_uri = 'https://kapi.kakao.com/v2/user/me'
-#     user_profile_info = requests.get(user_profile_info_uri, headers=headers)
-#
-#     json_data = user_profile_info.json()
-#
-#     # 닉네임과 이메일 데이터 가져옴
-#     nickname = json_data['kakao_account']['profile']['nickname']
-#     email = json_data['kakao_account']['email']
-#
-#     # 데이터베이스에 이미 저장되어있는 회원이면, user에 회원 저장
-#     if User.objects.filter(email=email).exists():
-#         user = User.objects.get(email=email)
-#     # 회원가입인 경우
-#     else:
-#         user = User.objects.create(
-#             email=email,
-#             nickname=nickname
-#         )
-#         user.save()
-#
-#     # 토큰 발행
-#     payload = JWT_PAYLOAD_HANDLER(user)
-#     jwt_token = JWT_ENCODE_HANDLER(payload)
-#
-#     response = {
-#         'success': True,
-#         'token': jwt_token
-#     }
-#
-#     return Response(response, status=200)

@@ -18,8 +18,9 @@ schema_view = get_schema_view(  # api 문서 설명
     permission_classes=(permissions.AllowAny,),
 )
 
-urlpatterns = [  # BaseURL 다음 입력할 수 있는 url 
+urlpatterns = [  # BaseURL 다음 입력할 수 있는 url
     path('admin/', admin.site.urls),
+    path('accounts/', include('allauth.urls')),
     path('users/', include('users.urls')),
     path('stores/', include('stores.urls')),
 ]

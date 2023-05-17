@@ -93,7 +93,7 @@ class NaverCallbackView(APIView):
                 # accept 에는 token 값이 json 형태로 들어온다({"key"}:"token value")
                 # 여기서 오는 key 값은 authtoken_token에 저장된다.
                 accept = requests.post(
-                    f"{main_domain}/users/naver/success/", data=data
+                    f"{main_domain}/users/naver/login/success/", data=data
                 )
                 # 만약 token 요청이 제대로 이루어지지 않으면 오류처리
                 if accept.status_code != 200:
@@ -103,7 +103,7 @@ class NaverCallbackView(APIView):
             except MyUser.DoesNotExist:
                 data = {'access_token': access_token, 'code': code, 'nickname': nickname}
                 accept = requests.post(
-                    f"{main_domain}/users/naver/success/", data=data
+                    f"{main_domain}/users/naver/login/success/", data=data
                 )
                 # token 발급
                 return Response(accept.json(), status=status.HTTP_200_OK)
@@ -116,6 +116,114 @@ class NaverCallbackView(APIView):
 
 class NaverToDjLoginView(SocialLoginView):
     adapter_class = naver_views.NaverOAuth2Adapter
+    client_class = OAuth2Client
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs).data
+        profile = Profile.objects.get(user=self.request.user)
+        social_user = profile.user
+        social_user.location = "거주지_선택"
+        social_user.nickname = request.data.get('nickname')
+        profile.location = "거주지_선택"
+        profile.nickname = request.data.get('nickname')
+        social_user.save()
+        profile.save()
+        additional_data = {
+            "user_id": profile.pk
+        }
+        response.update(additional_data)
+        return Response(response, status=status.HTTP_200_OK)
+
+
+class KakaoLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        api_key = settings.KAKAO_REST_API_KEY
+        response_type = "code"
+        # redirect uri
+        uri = main_domain + "/users/kakao/callback"
+        # request url
+        url = 'https://kauth.kakao.com/oauth/authorize'
+
+        return redirect(
+            f'{url}?client_id={api_key}&redirect_uri={uri}&response_type={response_type}'
+        )
+
+
+class KakaoCallbackView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            api_key = settings.KAKAO_REST_API_KEY
+            redirect_uri = main_domain + "/users/kakao/callback"
+            user_token = request.GET.get("code")
+            grant_type = 'authorization_code'
+
+            parameter = f"grant_type={grant_type}&client_id={api_key}&redirect_uri={redirect_uri}&code={user_token}"
+
+            # post request
+            token_request = requests.get(
+                f"https://kauth.kakao.com/oauth/token?{parameter}"
+            )
+            token_response_json = token_request.json()
+            error = token_response_json.get("error", None)
+
+            # if there is an error from token_request
+            if error is not None:
+                raise JSONDecodeError(error)
+
+            access_token = token_response_json.get("access_token")
+
+            # post request
+            profile_request = requests.get(
+                "https://kapi.kakao.com/v2/user/me",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            profile_json = profile_request.json()
+
+            # parsing profile json
+            kakao_account = profile_json.get("kakao_account")
+            email = kakao_account["email"]
+            profile = kakao_account["profile"]
+
+            try:
+                nickname = profile["nickname"]
+                if MyUser.objects.filter(nickname=nickname).exists():
+                    nickname = f"Kakao_{email.split('@')[0]}"
+            except:
+                nickname = f"Kakao_{email.split('@')[0]}"
+
+            if email is None:
+                return Response({
+                    "error": "카카오로부터 이메일 정보를 받아올 수 없습니다."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                user = MyUser.objects.get(email=email)
+                data = {'code': user_token, 'access_token': access_token, 'nickname': nickname}
+                accept = requests.post(
+                    f"{main_domain}/users/kakao/login/success/", data=data
+                )
+                if accept.status_code != 200:
+                    return Response({"error": "회원가입 하는데 실패했습니다."}, status=accept.status_code)
+                return Response(accept.json(), status=status.HTTP_200_OK)
+
+            except MyUser.DoesNotExist:
+                data = {'code': user_token, 'access_token': access_token, 'nickname': nickname}
+                accept = requests.post(
+                    f"{main_domain}/users/kakao/login/success/", data=data
+                )
+                return Response(accept.json(), status=status.HTTP_200_OK)
+        except:
+            return Response({
+                "error": "error",
+            }, status=status.HTTP_404_NOT_FOUND)
+
+
+class KakaoToDjLoginView(SocialLoginView):
+    adapter_class = kakao_views.KakaoOAuth2Adapter
     client_class = OAuth2Client
 
     def post(self, request, *args, **kwargs):

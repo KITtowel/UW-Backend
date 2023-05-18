@@ -122,12 +122,13 @@ class NaverToDjLoginView(SocialLoginView):
         response = super().post(request, *args, **kwargs).data
         profile = Profile.objects.get(user=self.request.user)
         social_user = profile.user
-        social_user.location = "거주지_선택"
-        social_user.nickname = request.data.get('nickname')
-        profile.location = "거주지_선택"
-        profile.nickname = request.data.get('nickname')
-        social_user.save()
-        profile.save()
+        if social_user.nickname == "":
+            social_user.location = "거주지_선택"
+            social_user.nickname = request.data.get('nickname')
+            profile.location = "거주지_선택"
+            profile.nickname = request.data.get('nickname')
+            social_user.save()
+            profile.save()
         additional_data = {
             "user_id": profile.pk
         }
@@ -230,12 +231,13 @@ class KakaoToDjLoginView(SocialLoginView):
         response = super().post(request, *args, **kwargs).data
         profile = Profile.objects.get(user=self.request.user)
         social_user = profile.user
-        social_user.location = "거주지_선택"
-        social_user.nickname = request.data.get('nickname')
-        profile.location = "거주지_선택"
-        profile.nickname = request.data.get('nickname')
-        social_user.save()
-        profile.save()
+        if social_user.nickname == "":
+            social_user.location = "거주지_선택"
+            social_user.nickname = request.data.get('nickname')
+            profile.location = "거주지_선택"
+            profile.nickname = request.data.get('nickname')
+            social_user.save()
+            profile.save()
         additional_data = {
             "user_id": profile.pk
         }

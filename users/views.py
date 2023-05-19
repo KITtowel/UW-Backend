@@ -354,4 +354,4 @@ class LeftMoneyCheckView(APIView):
         if url:
             return Response({'url': url}, status=status.HTTP_200_OK)
         else:
-            return Response({'message': '해당 지역에 매핑되는 잔액조회 사이트가 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': '해당 지역의 잔액조회 사이트가 없습니다. 거주지 정보를 확인해주세요'}, status=status.HTTP_404_NOT_FOUND)

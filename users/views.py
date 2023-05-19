@@ -122,7 +122,7 @@ class NaverToDjLoginView(SocialLoginView):
         response = super().post(request, *args, **kwargs).data
         profile = Profile.objects.get(user=self.request.user)
         social_user = profile.user
-        if social_user.nickname == "":
+        if social_user.location == "":
             social_user.location = "거주지_선택"
             social_user.nickname = request.data.get('nickname')
             profile.location = "거주지_선택"
@@ -231,7 +231,7 @@ class KakaoToDjLoginView(SocialLoginView):
         response = super().post(request, *args, **kwargs).data
         profile = Profile.objects.get(user=self.request.user)
         social_user = profile.user
-        if social_user.nickname == "":
+        if social_user.location == "":
             social_user.location = "거주지_선택"
             social_user.nickname = request.data.get('nickname')
             profile.location = "거주지_선택"

@@ -48,6 +48,12 @@ class StoreListView(APIView):
             longitude__gte=sw_longitude, longitude__lte=ne_longitude,
         )
 
+        # 인증된 사용자면 사용자의 location 정보 가져와서 같은 지역의 가맹점만 반환
+        if request and request.user.is_authenticated:
+            profile = Profile.objects.get(user=self.request.user)
+            map_user = profile.user
+            store = store.filter(store_address__contains=map_user.location)
+
         serializer = StoreListSerializer(store, many=True,
                                          context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
 
@@ -253,6 +259,12 @@ class CategoryListView(APIView):
             latitude__gte=sw_latitude, latitude__lte=ne_latitude,
             longitude__gte=sw_longitude, longitude__lte=ne_longitude).filter(category_set)
 
+        # 인증된 사용자면 사용자의 location 정보 가져와서 같은 지역의 가맹점만 반환
+        if request and request.user.is_authenticated:
+            profile = Profile.objects.get(user=self.request.user)
+            map_user = profile.user
+            store = store.filter(store_address__contains=map_user.location)
+
         serializer = StoreListSerializer(store, many=True,
                                          context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
 
@@ -305,6 +317,12 @@ class SearchListView(APIView):
             ).filter(latitude__gte=sw_latitude, latitude__lte=ne_latitude, longitude__gte=sw_longitude,
                      longitude__lte=ne_longitude, re_menu__contains=search
                      )
+
+        # 인증된 사용자면 사용자의 location 정보 가져와서 같은 지역의 가맹점만 반환
+        if request and request.user.is_authenticated:
+            profile = Profile.objects.get(user=self.request.user)
+            map_user = profile.user
+            store = store.filter(store_address__contains=map_user.location)
 
         serializer = StoreListSerializer(store, many=True,
                                          context={'user_latitude': user_latitude, 'user_longitude': user_longitude})

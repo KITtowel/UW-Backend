@@ -19,12 +19,6 @@ class StorePagination(PageNumberPagination):
     page_size = 20  # 한 페이지에 나타내는 가게 개수
     page_size_query_param = 'page_size'
 
-    def get_paginated_response(self, data):  # 최대 페이지 10페이지로 제한
-        response = super().get_paginated_response(data)
-        if self.page.number == 10:
-            response.data['next'] = None
-        return response
-
 
 # 거리순, 좋아요순, 평점순으로 가맹점 리스트 반환
 class StoreListView(APIView):
@@ -67,10 +61,6 @@ class StoreListView(APIView):
 
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(sorted_data, request)
-
-        current_page = paginator.page.number
-        if current_page > 10:
-            return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
 
         return paginator.get_paginated_response(result_page)
 
@@ -279,10 +269,6 @@ class CategoryListView(APIView):
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(sorted_data, request)
 
-        current_page = paginator.page.number
-        if current_page > 10:
-            return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
-
         return paginator.get_paginated_response(result_page)
 
 
@@ -337,10 +323,6 @@ class SearchListView(APIView):
 
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(sorted_data, request)
-
-        current_page = paginator.page.number
-        if current_page > 10:
-            return Response(status=status.HTTP_404_NOT_FOUND, data={'message': '최대 페이지를 초과하였습니다.'})
 
         return paginator.get_paginated_response(result_page)
 

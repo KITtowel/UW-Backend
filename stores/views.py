@@ -13,6 +13,7 @@ from django.db.models import Avg
 from datetime import datetime
 from django.db.models.functions import Replace
 from django.db.models import Value, Q
+from django.db.models import CharField, Value
 
 
 class StorePagination(PageNumberPagination):
@@ -291,7 +292,15 @@ class SearchListView(APIView):
 
         # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링, 검색어 기반으로 가맹점 이름이나 메뉴에 일치하는 값이 있는 가맹점 필터링
         search = search.replace(" ", "").strip()
-        if search_type == "가게명":
+
+        if search_type == "전체":
+            store = StoreDaegu.objects.annotate(
+                re_store_name=Replace('store_name', Value(" "), Value("")),
+                re_menu_name=Replace('menu', Value(" "), Value(""))
+            ).filter(latitude__gte=sw_latitude, latitude__lte=ne_latitude, longitude__gte=sw_longitude,
+                     longitude__lte=ne_longitude).\
+                filter(Q(re_store_name__contains=search) | Q(re_menu_name__contains=search))
+        elif search_type == "가게명":
             store = StoreDaegu.objects.annotate(
                 re_store_name=Replace('store_name', Value(" "), Value(""))
             ).filter(latitude__gte=sw_latitude, latitude__lte=ne_latitude, longitude__gte=sw_longitude,

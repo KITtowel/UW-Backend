@@ -1,4 +1,6 @@
-from json import JSONDecodeError
+from allauth.socialaccount.providers.kakao.views import KakaoOAuth2Adapter
+from allauth.socialaccount.providers.naver.views import NaverOAuth2Adapter
+from dj_rest_auth.registration.serializers import SocialLoginSerializer
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
@@ -10,113 +12,21 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.forms import PasswordResetForm
 from django.core.exceptions import ValidationError
 from rest_framework.request import Request
-from django.conf import settings
-from django.shortcuts import redirect
-from allauth.socialaccount.providers.naver import views as naver_views
-from allauth.socialaccount.providers.kakao import views as kakao_views
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
-import requests
-
-main_domain = settings.MAIN_DOMAIN
 
 
-class NaverLoginView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request, *args, **kwargs):
-        client_id = settings.NAVER_CLIENT_ID
-        response_type = "code"
-        uri = main_domain + "/users/naver/callback/"
-        state = settings.STATE
-        url = "https://nid.naver.com/oauth2.0/authorize"
-        return redirect(
-            f'{url}?response_type={response_type}&client_id={client_id}&redirect_uri={uri}&state={state}'
-        )
+# 소셜 로그인
+BASE_URL = 'http://119.56.230.45:8000/api/v1/accounts/rest-auth/'
+KAKAO_CALLBACK_URI = BASE_URL + 'kakao/callback/'
+NAVER_CALLBACK_URI = BASE_URL + 'naver/callback/'
 
 
-class NaverCallbackView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request, *args, **kwargs):
-        try:
-            # 네이버 로그인 Parameters
-            grant_type = 'authorization_code'
-            client_id = settings.NAVER_CLIENT_ID
-            client_secret = settings.NAVER_CLIENT_SECRET
-            code = request.GET.get('code')
-            state = request.GET.get('state')
-
-            parameters = f"grant_type={grant_type}&client_id={client_id}&client_secret={client_secret}&code={code}&state={state}"
-
-            # token request
-            token_request = requests.get(
-                f"https://nid.naver.com/oauth2.0/token?{parameters}"
-            )
-
-            token_response_json = token_request.json()
-            error = token_response_json.get("error", None)
-
-            if error is not None:
-                raise JSONDecodeError(error)
-
-            access_token = token_response_json.get("access_token")
-            refresh_token = token_response_json.get("refresh_token")
-
-            # User info get request
-            user_info_request = requests.get(
-                "https://openapi.naver.com/v1/nid/me",
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-
-            # User 정보를 가지고 오는 요청이 잘못된 경우
-            if user_info_request.status_code != 200:
-                return Response({"message": "failed to get email."}, status=status.HTTP_400_BAD_REQUEST)
-            user_info = user_info_request.json().get("response")
-            email = user_info["email"]
-            try:
-                nickname = user_info["nickname"]
-                if MyUser.objects.filter(nickname=nickname).exists():
-                    nickname = f"Naver_{email.split('@')[0]}"
-            except:
-                nickname = f"Naver_{email.split('@')[0]}"
-
-            # User 의 email 을 받아오지 못한 경우
-            if email is None:
-                return Response({
-                    "error": "네이버로 부터 이메일 정보를 받아올 수 없습니다."
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            try:
-                user = MyUser.objects.get(email=email)
-                data = {'access_token': access_token, 'code': code, 'nickname': nickname}
-                # accept 에는 token 값이 json 형태로 들어온다({"key"}:"token value")
-                # 여기서 오는 key 값은 authtoken_token에 저장된다.
-                accept = requests.post(
-                    f"{main_domain}/users/naver/login/success/", data=data
-                )
-                # 만약 token 요청이 제대로 이루어지지 않으면 오류처리
-                if accept.status_code != 200:
-                    return Response({"error": "회원가입 하는데 실패했습니다."}, status=accept.status_code)
-                return Response(accept.json(), status=status.HTTP_200_OK)
-
-            except MyUser.DoesNotExist:
-                data = {'access_token': access_token, 'code': code, 'nickname': nickname}
-                accept = requests.post(
-                    f"{main_domain}/users/naver/login/success/", data=data
-                )
-                # token 발급
-                return Response(accept.json(), status=status.HTTP_200_OK)
-
-        except:
-            return Response({
-                "error": "error",
-            }, status=status.HTTP_404_NOT_FOUND)
-
-
-class NaverToDjLoginView(SocialLoginView):
-    adapter_class = naver_views.NaverOAuth2Adapter
+class KakaoLogin(SocialLoginView):
+    adapter_class = KakaoOAuth2Adapter
+    callbakc_url = KAKAO_CALLBACK_URI
     client_class = OAuth2Client
+    serializer_class = SocialLoginSerializer
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs).data
@@ -124,9 +34,13 @@ class NaverToDjLoginView(SocialLoginView):
         social_user = profile.user
         if social_user.location == "":
             social_user.location = "거주지_선택"
-            social_user.nickname = request.data.get('nickname')
             profile.location = "거주지_선택"
-            profile.nickname = request.data.get('nickname')
+            if MyUser.objects.filter(nickname=request.data.get('nickname')).exists():
+                social_user.nickname = f"Kakao_{request.data.get('email').split('@')[0]}"
+                profile.nickname = f"Kakao_{request.data.get('email').split('@')[0]}"
+            else:
+                social_user.nickname = request.data.get('nickname')
+                profile.nickname = request.data.get('nickname')
             social_user.save()
             profile.save()
         additional_data = {
@@ -136,96 +50,11 @@ class NaverToDjLoginView(SocialLoginView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-class KakaoLoginView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request, *args, **kwargs):
-        api_key = settings.KAKAO_REST_API_KEY
-        response_type = "code"
-        # redirect uri
-        uri = main_domain + "/users/kakao/callback"
-        # request url
-        url = 'https://kauth.kakao.com/oauth/authorize'
-
-        return redirect(
-            f'{url}?client_id={api_key}&redirect_uri={uri}&response_type={response_type}'
-        )
-
-
-class KakaoCallbackView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request, *args, **kwargs):
-        try:
-            api_key = settings.KAKAO_REST_API_KEY
-            redirect_uri = main_domain + "/users/kakao/callback"
-            user_token = request.GET.get("code")
-            grant_type = 'authorization_code'
-
-            parameter = f"grant_type={grant_type}&client_id={api_key}&redirect_uri={redirect_uri}&code={user_token}"
-
-            # post request
-            token_request = requests.get(
-                f"https://kauth.kakao.com/oauth/token?{parameter}"
-            )
-            token_response_json = token_request.json()
-            error = token_response_json.get("error", None)
-
-            # if there is an error from token_request
-            if error is not None:
-                raise JSONDecodeError(error)
-
-            access_token = token_response_json.get("access_token")
-
-            # post request
-            profile_request = requests.get(
-                "https://kapi.kakao.com/v2/user/me",
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-            profile_json = profile_request.json()
-
-            # parsing profile json
-            kakao_account = profile_json.get("kakao_account")
-            email = kakao_account["email"]
-            profile = kakao_account["profile"]
-
-            try:
-                nickname = profile["nickname"]
-                if MyUser.objects.filter(nickname=nickname).exists():
-                    nickname = f"Kakao_{email.split('@')[0]}"
-            except:
-                nickname = f"Kakao_{email.split('@')[0]}"
-
-            if email is None:
-                return Response({
-                    "error": "카카오로부터 이메일 정보를 받아올 수 없습니다."
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            try:
-                user = MyUser.objects.get(email=email)
-                data = {'code': user_token, 'access_token': access_token, 'nickname': nickname}
-                accept = requests.post(
-                    f"{main_domain}/users/kakao/login/success/", data=data
-                )
-                if accept.status_code != 200:
-                    return Response({"error": "회원가입 하는데 실패했습니다."}, status=accept.status_code)
-                return Response(accept.json(), status=status.HTTP_200_OK)
-
-            except MyUser.DoesNotExist:
-                data = {'code': user_token, 'access_token': access_token, 'nickname': nickname}
-                accept = requests.post(
-                    f"{main_domain}/users/kakao/login/success/", data=data
-                )
-                return Response(accept.json(), status=status.HTTP_200_OK)
-        except:
-            return Response({
-                "error": "error",
-            }, status=status.HTTP_404_NOT_FOUND)
-
-
-class KakaoToDjLoginView(SocialLoginView):
-    adapter_class = kakao_views.KakaoOAuth2Adapter
+class NaverLogin(SocialLoginView):
+    adapter_class = NaverOAuth2Adapter
+    callback_url = NAVER_CALLBACK_URI
     client_class = OAuth2Client
+    serializer_class = SocialLoginSerializer
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs).data
@@ -233,9 +62,13 @@ class KakaoToDjLoginView(SocialLoginView):
         social_user = profile.user
         if social_user.location == "":
             social_user.location = "거주지_선택"
-            social_user.nickname = request.data.get('nickname')
             profile.location = "거주지_선택"
-            profile.nickname = request.data.get('nickname')
+            if MyUser.objects.filter(nickname=request.data.get('nickname')).exists():
+                social_user.nickname = f"Naver_{request.data.get('email').split('@')[0]}"
+                profile.nickname = f"Naver_{request.data.get('email').split('@')[0]}"
+            else:
+                social_user.nickname = request.data.get('nickname')
+                profile.nickname = request.data.get('nickname')
             social_user.save()
             profile.save()
         additional_data = {

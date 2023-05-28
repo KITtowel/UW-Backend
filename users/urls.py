@@ -1,7 +1,6 @@
 from django.urls import path
 from .views import RegisterView, LoginView, ProfileView, PasswordChangeView, UsernameFindView, \
-    CustomPasswordResetView, LeftMoneyCheckView, NaverLoginView, NaverCallbackView, NaverToDjLoginView, \
-    KakaoLoginView, KakaoCallbackView, KakaoToDjLoginView
+    CustomPasswordResetView, LeftMoneyCheckView, KakaoLogin, NaverLogin
 from django.contrib.auth import views as auth_views
 
 
@@ -17,10 +16,7 @@ urlpatterns = [
     path('password_reset_complete/', auth_views.PasswordResetCompleteView.as_view(),
          name="password_reset_complete"),  # 비밀번호 변경 완료
     path('moneycheck/<int:pk>/', LeftMoneyCheckView.as_view()),  # 아동급식카드 잔액 죄회 가능 url
-    path('naver/login/', NaverLoginView.as_view()),
-    path('naver/callback/', NaverCallbackView.as_view()),
-    path('naver/login/success/', NaverToDjLoginView.as_view()),
-    path('kakao/login/', KakaoLoginView.as_view()),
-    path('kakao/callback/', KakaoCallbackView.as_view()),
-    path('kakao/login/success/', KakaoToDjLoginView.as_view()),
+    path('rest-auth/kakao/', KakaoLogin.as_view(), name='kakao'),
+    path('rest-auth/naver/', NaverLogin.as_view(), name='naver'),
 ]
+

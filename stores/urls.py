@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import StoreListView, StoreLikeView, LikedStoreListView, StoreDetailView, MapMarkView, \
-    ReviewCreateView, ReviewView, UserReviewListView, ReviewReportView, CategoryListView, SearchListView
+    ReviewCreateView, ReviewView, UserReviewListView, ReviewReportView, CategoryListView, SearchListView, \
+    CategoryMapMarkView, SearchMapMarkView
 
 urlpatterns = [
     path('distance_order/', StoreListView.as_view(), name='distance_list'),  # 거리순 가맹점 리스트 반환
@@ -19,5 +20,7 @@ urlpatterns = [
     path('search_distance_order/', SearchListView.as_view(), name='search_distance'),  # 검색어 기반 가맹점 리스트 반환 (거리순)
     path('search_like_order/', SearchListView.as_view(), name='search_like'),  # 검색어 기반 리스트 반환 (좋아요순)
     path('search_rating_order/', SearchListView.as_view(), name='search_rating'),  # 검색어 기반 가맹점 리스트 반환 (평점순)
-    path('map_mark/', MapMarkView.as_view())  # 지도 마커용 가맹점 리스트 반환
+    path('map_mark/', MapMarkView.as_view()),  # 지도 마커용 가맹점 리스트 반환
+    path('category_map_mark/', CategoryMapMarkView.as_view()),  # 지도 마커용 카테고리별 가맹점 리스트 반환
+    path('search_map_mark/', SearchMapMarkView.as_view()),  # 지도 마커용 검색어별 가맹점 리스트 반환
 ]

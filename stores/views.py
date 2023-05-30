@@ -336,6 +336,7 @@ class SearchListView(APIView):
         return paginator.get_paginated_response(result_page)
 
 
+# 마커 표시용 가맹점 리스트 반환
 class MapMarkView(APIView):
     def post(self, request):
         try:
@@ -353,6 +354,110 @@ class MapMarkView(APIView):
             latitude__gte=sw_latitude, latitude__lte=ne_latitude,
             longitude__gte=sw_longitude, longitude__lte=ne_longitude,
         )
+
+        # 인증된 사용자면 사용자의 location 정보 가져와서 같은 지역의 가맹점만 반환
+        if request and request.user.is_authenticated:
+            profile = Profile.objects.get(user=self.request.user)
+            map_user = profile.user
+            store = store.filter(store_address__contains=map_user.location)
+
+        serializer = MapMarkSerializer(store, many=True,
+                                       context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
+        sorted_data = sorted(serializer.data, key=lambda x: (x['distance']))
+        count = len(sorted_data)
+        response_data = {
+            'count': count,
+            'data': sorted_data
+        }
+        return Response(data=response_data, status=status.HTTP_200_OK)
+
+
+# 카테고리별 마커 표시용 가맹점 리스트 반환
+class CategoryMapMarkView(APIView):
+    def post(self, request):
+        try:
+            user_latitude = float(request.data.get('latitude'))  # 중앙 위도
+            user_longitude = float(request.data.get('longitude'))  # 중앙 경도
+            ne_latitude = float(request.data.get('ne_latitude'))  # 북동 위도
+            ne_longitude = float(request.data.get('ne_longitude'))  # 북동 경도
+            sw_latitude = float(request.data.get('sw_latitude'))  # 남서 위도
+            sw_longitude = float(request.data.get('sw_longitude'))  # 남서 경도
+            select_category = str(request.data.get('category'))  # 사용자가 선택한 카테고리
+        except ValueError:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
+
+        category_list = select_category.split()
+        category_set = Q(category__exact=category_list[0])
+        if len(category_list) > 1:
+            for category in category_list[1:]:
+                category_set.add(Q(category__exact=category), category_set.OR)
+
+        # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링, 사용자가 선택한 카테고리와 같은 카테고리의 가게만 필터링
+        store = StoreDaegu.objects.filter(
+            latitude__gte=sw_latitude, latitude__lte=ne_latitude,
+            longitude__gte=sw_longitude, longitude__lte=ne_longitude).filter(category_set)
+
+        # 인증된 사용자면 사용자의 location 정보 가져와서 같은 지역의 가맹점만 반환
+        if request and request.user.is_authenticated:
+            profile = Profile.objects.get(user=self.request.user)
+            map_user = profile.user
+            store = store.filter(store_address__contains=map_user.location)
+
+        serializer = MapMarkSerializer(store, many=True,
+                                       context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
+        sorted_data = sorted(serializer.data, key=lambda x: (x['distance']))
+        count = len(sorted_data)
+        response_data = {
+            'count': count,
+            'data': sorted_data
+        }
+        return Response(data=response_data, status=status.HTTP_200_OK)
+
+
+# 검색어별 마커 표시용 가맹점 리스트 반환
+class SearchMapMarkView(APIView):
+    def post(self, request):
+        try:
+            user_latitude = float(request.data.get('latitude'))  # 중앙 위도
+            user_longitude = float(request.data.get('longitude'))  # 중앙 경도
+            ne_latitude = float(request.data.get('ne_latitude'))  # 북동 위도
+            ne_longitude = float(request.data.get('ne_longitude'))  # 북동 경도
+            sw_latitude = float(request.data.get('sw_latitude'))  # 남서 위도
+            sw_longitude = float(request.data.get('sw_longitude'))  # 남서 경도
+            search_type = str(request.data.get('search_type'))  # 검색어 타입 (메뉴, 가게명)
+            search = str(request.data.get('search'))  # 사용자가 입력한 검색어
+        except ValueError:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': '잘못된 값이 전달되었습니다.'})
+
+        # 북동 좌표와 남서 좌표 안에 있는 가게들만 필터링, 검색어 기반으로 가맹점 이름이나 메뉴에 일치하는 값이 있는 가맹점 필터링
+        search = search.replace(" ", "").strip()
+
+        if search_type == "전체":
+            store = StoreDaegu.objects.annotate(
+                re_store_name=Replace('store_name', Value(" "), Value("")),
+                re_menu_name=Replace('menu', Value(" "), Value(""))
+            ).filter(latitude__gte=sw_latitude, latitude__lte=ne_latitude, longitude__gte=sw_longitude,
+                     longitude__lte=ne_longitude). \
+                filter(Q(re_store_name__contains=search) | Q(re_menu_name__contains=search))
+        elif search_type == "가게명":
+            store = StoreDaegu.objects.annotate(
+                re_store_name=Replace('store_name', Value(" "), Value(""))
+            ).filter(latitude__gte=sw_latitude, latitude__lte=ne_latitude, longitude__gte=sw_longitude,
+                     longitude__lte=ne_longitude, re_store_name__contains=search
+                     )
+        elif search_type == "메뉴":
+            store = StoreDaegu.objects.annotate(
+                re_menu=Replace('menu', Value(" "), Value(""))
+            ).filter(latitude__gte=sw_latitude, latitude__lte=ne_latitude, longitude__gte=sw_longitude,
+                     longitude__lte=ne_longitude, re_menu__contains=search
+                     )
+
+        # 인증된 사용자면 사용자의 location 정보 가져와서 같은 지역의 가맹점만 반환
+        if request and request.user.is_authenticated:
+            profile = Profile.objects.get(user=self.request.user)
+            map_user = profile.user
+            store = store.filter(store_address__contains=map_user.location)
+
         serializer = MapMarkSerializer(store, many=True,
                                        context={'user_latitude': user_latitude, 'user_longitude': user_longitude})
         sorted_data = sorted(serializer.data, key=lambda x: (x['distance']))

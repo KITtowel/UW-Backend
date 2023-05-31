@@ -14,10 +14,11 @@ from django.core.exceptions import ValidationError
 from rest_framework.request import Request
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
+import requests
 
 
 # 소셜 로그인
-BASE_URL = 'http://119.56.230.45:8000/api/v1/accounts/rest-auth/'
+BASE_URL = 'http://127.0.0.1:8000/api/v1/accounts/rest-auth/'
 KAKAO_CALLBACK_URI = BASE_URL + 'kakao/callback/'
 NAVER_CALLBACK_URI = BASE_URL + 'naver/callback/'
 
@@ -44,7 +45,8 @@ class KakaoLogin(SocialLoginView):
             social_user.save()
             profile.save()
         additional_data = {
-            "user_id": profile.pk
+            "user_id": profile.pk,
+            "location": social_user.location
         }
         response.update(additional_data)
         return Response(response, status=status.HTTP_200_OK)
@@ -60,19 +62,35 @@ class NaverLogin(SocialLoginView):
         response = super().post(request, *args, **kwargs).data
         profile = Profile.objects.get(user=self.request.user)
         social_user = profile.user
+        
+        # 네이버에서 사용자 정보 갖고 오기
+        user_info_request = requests.get(
+            "https://openapi.naver.com/v1/nid/me",
+            headers={"Authorization": f"Bearer {request.data.get('access_token')}"},
+        )
+
+        # 사용자 정보를 가지고 오는 요청이 잘못된 경우
+        if user_info_request.status_code != 200:
+            return Response({"message": "정보를 가져오는데 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        user_info = user_info_request.json().get("response")
+        email = user_info["email"]
+        nickname = user_info["nickname"]
+
         if social_user.location == "":
             social_user.location = "거주지_선택"
             profile.location = "거주지_선택"
-            if MyUser.objects.filter(nickname=request.data.get('nickname')).exists():
-                social_user.nickname = f"Naver_{request.data.get('email').split('@')[0]}"
-                profile.nickname = f"Naver_{request.data.get('email').split('@')[0]}"
+            if MyUser.objects.filter(nickname=nickname).exists():
+                social_user.nickname = f"Naver_{email.split('@')[0]}"
+                profile.nickname = f"Naver_{email.split('@')[0]}"
             else:
-                social_user.nickname = request.data.get('nickname')
-                profile.nickname = request.data.get('nickname')
+                social_user.nickname = nickname
+                profile.nickname = nickname
             social_user.save()
             profile.save()
+
         additional_data = {
-            "user_id": profile.pk
+            "user_id": profile.pk,
+            "location": social_user.location
         }
         response.update(additional_data)
         return Response(response, status=status.HTTP_200_OK)

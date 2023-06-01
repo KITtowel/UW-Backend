@@ -129,9 +129,9 @@ class ProfileView(generics.RetrieveUpdateDestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         user = instance.user
-        password = request.data.get('password')
-        if not user.check_password(password):
-            return Response({'error': '비밀번호가 일치하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        # password = request.data.get('password')
+        # if not user.check_password(password):
+        #     return Response({'error': '비밀번호가 일치하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         withdrawal = Withdrawal(user=user, location=user.location, location2=user.location2, reason=request.data.get('reason'))
         withdrawal.save()
         self.perform_destroy(instance)

@@ -137,7 +137,7 @@ class ReviewCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         profile = Profile.objects.get(user=self.request.user)
         store_id = self.kwargs.get('store_id')
-        store = StoreDaegu.objects.get(pk=store_id)
+        store = StoreDaegu.objects.get(store_id=store_id)
         serializer.save(author=self.request.user, profile=profile, store=store)
         reviews = Review.objects.filter(store=store)
         rating_mean = reviews.aggregate(Avg('rating'))['rating__avg']

@@ -110,6 +110,12 @@ class StoreDetailSerializer(serializers.ModelSerializer):
                                      key=lambda x: datetime.strptime(x['published_data'].strftime('%Y-%m-%d %H:%M:%S'),
                                                                      '%Y-%m-%d %H:%M:%S'), reverse=True)
                 full_data = first_data + remain_data
+            else:
+                serializer = ReviewSerializer(obj.reviews, many=True,
+                                              context={'request': self.context.get('request')}).data
+                full_data = sorted(serializer,
+                                   key=lambda x: datetime.strptime(x['published_data'].strftime('%Y-%m-%d %H:%M:%S'),
+                                                                   '%Y-%m-%d %H:%M:%S'), reverse=True)
         else:
             serializer = ReviewSerializer(obj.reviews, many=True, context={'request': self.context.get('request')}).data
             full_data = sorted(serializer,

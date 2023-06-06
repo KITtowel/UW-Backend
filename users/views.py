@@ -31,21 +31,34 @@ class KakaoLogin(SocialLoginView):
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs).data
-        profile = Profile.objects.get(user=self.request.user)
-        social_user = profile.user
+        user_profile = Profile.objects.get(user=self.request.user)
+        social_user = user_profile.user
+
+        # 카카오에서 사용자 정보 갖고 오기
+        profile_request = requests.get(
+            "https://kapi.kakao.com/v2/user/me",
+            headers={"Authorization": f"Bearer {request.data.get('access_token')}"},
+        )
+        profile_json = profile_request.json()
+        kakao_account = profile_json.get("kakao_account")
+        email = kakao_account["email"]
+        profile = kakao_account["profile"]
+        nickname = profile["nickname"]
+
         if social_user.location == "":
             social_user.location = "거주지_선택"
-            profile.location = "거주지_선택"
-            if MyUser.objects.filter(nickname=request.data.get('nickname')).exists():
-                social_user.nickname = f"Kakao_{request.data.get('email').split('@')[0]}"
-                profile.nickname = f"Kakao_{request.data.get('email').split('@')[0]}"
+            user_profile.location = "거주지_선택"
+            if MyUser.objects.filter(nickname=nickname).exists():
+                social_user.nickname = f"Kakao_{email.split('@')[0]}"
+                user_profile.nickname = f"Kakao_{email.split('@')[0]}"
             else:
-                social_user.nickname = request.data.get('nickname')
-                profile.nickname = request.data.get('nickname')
+                social_user.nickname = nickname
+                user_profile.nickname = nickname
             social_user.save()
-            profile.save()
+            user_profile.save()
+
         additional_data = {
-            "user_id": profile.pk,
+            "user_id": user_profile.pk,
             "location": social_user.location
         }
         response.update(additional_data)

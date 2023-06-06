@@ -34,16 +34,20 @@ class KakaoLogin(SocialLoginView):
         response = super().post(request, *args, **kwargs).data
         user_profile = Profile.objects.get(user=self.request.user)
         social_user = user_profile.user
+        email = request.data.get('email')
+        nickname = request.data.get('nickname')
 
         if social_user.location == "":
+            user_profile = Profile.objects.get(user=self.request.user)
+            social_user = user_profile.user
             social_user.location = "거주지_선택"
             user_profile.location = "거주지_선택"
-            if MyUser.objects.filter(nickname=request.data.get('nickname')).exists():
-                social_user.nickname = f"Kakao_{request.data.get('email').split('@')[0]}"
-                user_profile.nickname = f"Kakao_{request.data.get('email').split('@')[0]}"
+            if MyUser.objects.filter(nickname=nickname).exists():
+                social_user.nickname = f"Kakao_{email.split('@')[0]}"
+                user_profile.nickname = f"Kakao_{email.split('@')[0]}"
             else:
-                social_user.nickname = request.data.get('nickname')
-                user_profile.nickname = request.data.get('nickname')
+                social_user.nickname = nickname
+                user_profile.nickname = nickname
             social_user.save()
             user_profile.save()
 

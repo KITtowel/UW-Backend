@@ -14,11 +14,12 @@ from django.core.exceptions import ValidationError
 from rest_framework.request import Request
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
+from django.conf import settings
 import requests
 
 
 # 소셜 로그인
-BASE_URL = 'http://13.209.7.234:8000/api/v1/accounts/rest-auth/'
+BASE_URL = f'{settings.MAIN_DOMAIN}/api/v1/accounts/rest-auth/'
 KAKAO_CALLBACK_URI = BASE_URL + 'kakao/callback/'
 NAVER_CALLBACK_URI = BASE_URL + 'naver/callback/'
 
@@ -34,26 +35,15 @@ class KakaoLogin(SocialLoginView):
         user_profile = Profile.objects.get(user=self.request.user)
         social_user = user_profile.user
 
-        # 카카오에서 사용자 정보 갖고 오기
-        profile_request = requests.get(
-            "https://kapi.kakao.com/v2/user/me",
-            headers={"Authorization": f"Bearer {request.data.get('access_token')}"},
-        )
-        profile_json = profile_request.json()
-        kakao_account = profile_json.get("kakao_account")
-        email = kakao_account["email"]
-        profile = kakao_account["profile"]
-        nickname = profile["nickname"]
-
         if social_user.location == "":
             social_user.location = "거주지_선택"
             user_profile.location = "거주지_선택"
-            if MyUser.objects.filter(nickname=nickname).exists():
-                social_user.nickname = f"Kakao_{email.split('@')[0]}"
-                user_profile.nickname = f"Kakao_{email.split('@')[0]}"
+            if MyUser.objects.filter(nickname=request.data.get('nickname')).exists():
+                social_user.nickname = f"Kakao_{request.data.get('email').split('@')[0]}"
+                user_profile.nickname = f"Kakao_{request.data.get('email').split('@')[0]}"
             else:
-                social_user.nickname = nickname
-                user_profile.nickname = nickname
+                social_user.nickname = request.data.get('nickname')
+                user_profile.nickname = request.data.get('nickname')
             social_user.save()
             user_profile.save()
 

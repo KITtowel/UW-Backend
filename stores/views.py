@@ -1,3 +1,4 @@
+from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -138,6 +139,10 @@ class ReviewCreateView(generics.CreateAPIView):
         profile = Profile.objects.get(user=self.request.user)
         store_id = self.kwargs.get('store_id')
         store = StoreDaegu.objects.get(store_id=store_id)
+
+        if profile.user.location not in store.store_address:
+            raise ValidationError({'message': '해당 지역에 거주하지 않아 글을 작성할 수 없습니다.'})
+
         serializer.save(author=self.request.user, profile=profile, store=store)
         reviews = Review.objects.filter(store=store)
         rating_mean = reviews.aggregate(Avg('rating'))['rating__avg']

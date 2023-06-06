@@ -18,7 +18,7 @@ import requests
 
 
 # 소셜 로그인
-BASE_URL = 'http://127.0.0.1:8000/api/v1/accounts/rest-auth/'
+BASE_URL = 'http://13.209.7.234:8000/api/v1/accounts/rest-auth/'
 KAKAO_CALLBACK_URI = BASE_URL + 'kakao/callback/'
 NAVER_CALLBACK_URI = BASE_URL + 'naver/callback/'
 

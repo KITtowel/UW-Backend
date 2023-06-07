@@ -14,7 +14,6 @@ from django.db.models import Avg
 from datetime import datetime
 from django.db.models.functions import Replace
 from django.db.models import Value, Q
-from django.db.models import CharField, Value
 
 
 class StorePagination(PageNumberPagination):
